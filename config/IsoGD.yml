@@ -1,0 +1,63 @@
+common:
+  #-------basic Hyparameter----------
+  visdom:
+    enable: False
+    visname: IsoGD
+
+  dataset: IsoGD #Database name e.g., NTU, THUREAD ...
+  test_batch_size: 40
+  init_epochs: 0
+  report_freq: 10
+  dist: True
+  vis_feature: True # Feature Visualization?
+  DEBUG: False
+
+  scheduler:
+    name: ReduceLR
+    patience: 4
+    warm_up_epochs: 3
+  loss:
+    name: SoftCE
+    labelsmooth: True
+  MultiLoss: True
+  loss_lamdb: [ 1, 0.5, 0.5, 0.5 ]
+
+model:
+  Network: DSNV2 # e.g., I3DWTrans or FusionNet
+  pretrained: ''
+  resumelr: ''
+  SYNC_BN: 1
+  # w: 10
+  # temper: 0.5
+  recoupling: True
+  knn_attention: 0.7
+  sharpness: True
+  temp: [ 0.04, 0.07 ]
+  frp: False
+  SEHeads: 1
+  N: 6 # Number of Transformer Blocks
+
+fusion:
+  #-------Used for fusion network----------
+  rgb_checkpoint:  
+    cs16: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/IsoGD-16-DTNV2-M/model_best.pth.tar
+    cs32: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/IsoGD-32-DTNV2-M/model_best.pth.tar
+    cs64: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/IsoGD-64-DTNV2-M/model_best.pth.tar
+  depth_checkpoint:
+    cs16: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/IsoGD-16-DTNV2-K/model_best.pth.tar
+    cs32: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/IsoGD-32-DTNV2-K/model_best.pth.tar
+    cs64: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/IsoGD-64-DTNV2-K/model_best.pth.tar
+  # rgb_checkpoint:  '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/IsoGD-64-DTNV2-M/model_best.pth.tar'
+  # depth_checkpoint: '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/IsoGD-64-DTNV2-K/model_best.pth.tar'
+  # rgb_checkpoint:  /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/IsoGD-32-DTNV2-M/model_best.pth.tar
+  # depth_checkpoint: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/IsoGD-32-DTNV2-K/model_best.pth.tar
+  # rgb_checkpoint:  /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/IsoGD-16-DTNV2-M/model_best.pth.tar
+  # depth_checkpoint:  /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/IsoGD-16-DTNV2-K/model_best.pth.tar
+dataset:
+  flip: 0.0
+  rotated: 0.5
+  angle: (-10, 10) # Rotation angle
+  Blur: False
+  resize: (256, 256)
+  crop_size: 224
+  sample_size: 224

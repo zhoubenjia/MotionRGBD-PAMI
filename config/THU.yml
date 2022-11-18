@@ -1,0 +1,59 @@
+common:
+  #-------basic Hyparameter----------
+  visdom:
+    enable: False
+    visname: THU
+  dataset: THUREAD
+  init_epochs: 0
+  report_freq: 10
+  test_batch_size: 4
+  dist: True
+  vis_feature: True # Visualization?
+  DEBUG: False
+
+  scheduler:
+    name: cosin
+    patience: 4
+    warm_up_epochs: 3 
+  loss:
+    name: SoftCE
+    labelsmooth: True
+  MultiLoss: True
+  loss_lamdb: [ 1, 0.5, 0.5, 0.5 ]
+
+model:
+  Network: DSNV2 # deit_tiny_patch16_224 # e.g., DSN or FusionNet
+  pretrained: ''
+  resumelr: False
+  SYNC_BN: 1
+  # w: 10
+  # temper: 0.5
+  recoupling: True
+  knn_attention: 0.7
+  sharpness: True
+  temp: [ 0.04, 0.07 ]
+  frp: False
+  SEHeads: 1
+  N: 6 # Number of Transformer Blocks
+
+fusion:
+  #-------Used for fusion network----------
+  rgb_checkpoint:  
+    cs16: '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-16-DTNV2-M/model_best.pth.tar-per-ntu'
+    cs32: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-32-DTNV2-M-simi/model_best.pth.tar #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-32-DTNV2-M/model_best.pth.tar-per-iso #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ2-32-DTNV2-M/model_best.pth.tar-per-iso #'/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-32-DTNV2-M/model_best.pth.tar-per-iso'
+    cs64: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-64-DTNV2-M/model_best.pth.tar-per-sm_v2 #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-64-DTNV2-M/model_best.pth.tar-per-iso
+  depth_checkpoint:
+    cs16: '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-16-DTNV2-K/model_best.pth.tar'
+    cs32: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-32-DTNV2-K-simi/model_best.pth.tar #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-32-DTNV2-K/model_best.pth.tar-per-iso #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ2-32-DTNV2-K/model_best.pth.tar-per-iso 
+    cs64: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-64-DTNV2-K/model_best.pth.tar
+  # rgb_checkpoint: '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ-32-@4/model_best.pth.tar-87.5' 
+  # depth_checkpoint: '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ-K-sm-plus-0.5/model_best.pth.tar' 
+
+dataset:
+  flip: 0.5
+  rotated: 0.8
+  angle: (-45, 45)
+  Blur: False
+  resize: (320, 240)
+  sample_size: 224
+  crop_size: 200
