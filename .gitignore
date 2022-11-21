@@ -4,8 +4,7 @@ imnet_resnet50_scratch/timm_temp/
 .dumbo.json
 Checkpoints/
 out/
-demo/*.png
-demo/*.jpg
+demo/*.py
 *.tar
 core*
 bk/
