@@ -62,10 +62,10 @@ def plot_confusion_matrix(PREDICTIONS_PATH, grounds, preds, categories, idx, top
 
     plt.pause(0.1)
     fig.savefig(os.path.join(PREDICTIONS_PATH, "confusion_matrix"), dpi=fig.dpi)
-    img = Image.open(os.path.join(PREDICTIONS_PATH, "confusion_matrix.png"))
-    con_figs.append(img)
-    if len(con_figs) > 1:
-        con_figs[0].save(os.path.join(PREDICTIONS_PATH, "confusion_matrix.gif"), save_all=True, append_images=con_figs[1:], duration=1000, loop=0)
+    # img = Image.open(os.path.join(PREDICTIONS_PATH, "confusion_matrix.png"))
+    # con_figs.append(img)
+    # if len(con_figs) > 1:
+    #     con_figs[0].save(os.path.join(PREDICTIONS_PATH, "confusion_matrix.gif"), save_all=True, append_images=con_figs[1:], duration=1000, loop=0)
 
     plt.close()
 
@@ -107,10 +107,10 @@ def plot_confusion_matrix(PREDICTIONS_PATH, grounds, preds, categories, idx, top
     # fig.savefig(os.path.join(PREDICTIONS_PATH, "Accuracy-Precision_{}.png".format(idx)), dpi=fig.dpi)
     fig.savefig(os.path.join(PREDICTIONS_PATH, "Accuracy-Precision.png"), dpi=fig.dpi)
 
-    img = Image.open(os.path.join(PREDICTIONS_PATH, "Accuracy-Precision.png"))
-    acc_figs.append(img)
-    if len(acc_figs) > 1:
-        acc_figs[0].save(os.path.join(PREDICTIONS_PATH, "Accuracy-Precision.gif"), save_all=True, append_images=acc_figs[1:], duration=1000, loop=0)
+    # img = Image.open(os.path.join(PREDICTIONS_PATH, "Accuracy-Precision.png"))
+    # acc_figs.append(img)
+    # if len(acc_figs) > 1:
+    #     acc_figs[0].save(os.path.join(PREDICTIONS_PATH, "Accuracy-Precision.gif"), save_all=True, append_images=acc_figs[1:], duration=1000, loop=0)
 
     plt.close()
 
