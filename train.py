@@ -9,6 +9,7 @@ import cv2
 import os, random, math
 import sys
 # sys.path.append(os.path.join('..', os.path.abspath(os.path.join(os.getcwd()))) )
+from pathlib import Path
 
 from timm.scheduler import create_scheduler
 from timm.utils import ApexScaler, NativeScaler
@@ -757,6 +758,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('Motion RGB-D training and evaluation script', parents=[get_args_parser()])
     args = parser.parse_args()
     args = Config(args)
+
+    if args.save:
+        Path(args.save).mkdir(parents=True, exist_ok=True)
 
     try:
         if args.resume:
