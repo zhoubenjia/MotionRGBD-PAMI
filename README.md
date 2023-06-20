@@ -47,7 +47,7 @@ Data prepare: dataset with the following folder structure:
 │  │   │   ├──MDepth-00000001.png
 │  │   │   ├──......
 ```
-It is important to note due to the relatively high resolution of the RGB video in the NTU dataset, instead of directly resizing the video frames from the original resolution (1280x960) to 320x240, we first crop an object-centric ROI area (640x480)  for each frame via the provided mask images, and then resize it to 320x240 for training and testing. Then resize it to 320x240 for training and testing. Please refer to data/data_preprose.py for the related data preprocessing codes.
+NOTE: We use the NTU dataset’s high-resolution RGB video (1280x960). To avoid losing infoemation, we do not resize the video frames directly to 320x240. Instead, we crop a 640x480 ROI area for each frame using the realeased mask images. Then we resize the cropped area to 320x240 for training and testing. See data/data_preprose_for_NTU.py for the data preprocessing codes.
 
 ## 3. Methodology
 <p align="center">
