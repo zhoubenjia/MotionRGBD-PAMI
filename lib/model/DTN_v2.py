@@ -68,7 +68,7 @@ class DTNNet(nn.Module):
                  init: bool = False,
                  warmup_temp_epochs: int = 30,
                  branchs=3,
-                 dynamic_tms=False):
+                 dynamic_tms=True):
         super().__init__()
 
         self._args = args

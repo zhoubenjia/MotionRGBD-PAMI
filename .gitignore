@@ -10,3 +10,12 @@ core*
 bk/
 *.ipynb
 *.sh
+out*
+demo/
+tools/projects/
+UCF101.yaml
+demo.py
+inerfence.py
+army.py
+I3D.py
+bk*

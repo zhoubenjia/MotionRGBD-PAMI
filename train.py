@@ -56,6 +56,7 @@ def get_args_parser():
     parser = argparse.ArgumentParser('Motion RGB-D training and evaluation script', add_help=False)
     parser.add_argument('--data', type=str, default='/path/to/NTU-RGBD/dataset/', help='data dir')
     parser.add_argument('--splits', type=str, default='/path/to/NTU-RGBD/dataset/dataset_splits/@CS', help='data dir')
+    parser.add_argument('--num-classes', default=None)
 
     parser.add_argument('--batch-size', default=16, type=int)
     parser.add_argument('--test-batch-size', default=32, type=int)
@@ -360,7 +361,7 @@ def main(args):
         best_score=0.0
     )
 
-    first_test = True
+    first_test = False
     if first_test:
         args.distill_lamdb = args.distill
         valid_acc, _, valid_dict, meter_dict, output = infer(valid_queue, model, criterion, local_rank, strat_epoch, device, captuer)
@@ -372,10 +373,21 @@ def main(args):
         fig = plt.figure()
         ax = fig.add_subplot()
         sns.heatmap(cm, annot=True, fmt='g', ax=ax)
+        # labels, title and ticks
+        ax.set_title('Confusion Matrix', fontsize=20)
+        ax.set_xlabel('Predicted labels', fontsize=16)
+        ax.set_ylabel('True labels', fontsize=16)
+
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
         fig.savefig(os.path.join(args.save, "confusion_matrix"), dpi=fig.dpi)
 
         Accuracy = [(cm[i, i] / sum(cm[i, :])) * 100 if sum(cm[i, :]) != 0 else 0.000001 for i in range(cm.shape[0])]
-        print(Accuracy)
+        Precision = [(cm[i, i] / sum(cm[:, i])) * 100 if sum(cm[:, i]) != 0 else 0.000001 for i in range(cm.shape[1])]
+        print('| Class ID \t Accuracy(%) \t Precision(%) |')
+        for i in range(len(Accuracy)):
+            print('| {0} \t {1} \t {2} |'.format(i, round(Accuracy[i], 2), round(Precision[i], 2)))
+        print('-' * 80)
         
         if args.save_output:
             torch.save(output, os.path.join(args.save, '{}-output.pth'.format(args.type)))
@@ -383,7 +395,7 @@ def main(args):
             return
 
     for epoch in range(strat_epoch, args.epochs):
-        train_queue.sampler.set_epoch(epoch)
+        train_sampler.set_epoch(epoch)
         model.drop_path_prob = args.drop_path_prob * epoch / args.epochs
 
         if epoch <= args.warmup_epochs:
@@ -453,9 +465,9 @@ def train_one_epoch(train_queue, model, model_ema, criterion, optimizer, epoch, 
     )
     meter_dict['Data_Time'] = AverageMeter()
     meter_dict.update(dict(
-        Acc_1=AverageMeter(),
-        Acc_2=AverageMeter(),
-        Acc_3=AverageMeter(),
+        Acc_s=AverageMeter(),
+        Acc_m=AverageMeter(),
+        Acc_l=AverageMeter(),
         Acc=AverageMeter(),
         Acc_top5=AverageMeter(),
     ))
@@ -485,12 +497,6 @@ def train_one_epoch(train_queue, model, model_ema, criterion, optimizer, epoch, 
 
         if args.frp:
             inputs = heatmap
-            # save_images = (inputs[0] - inputs[0].min()) / (inputs[0].max() - inputs[0].min())
-            # save_images = make_grid(save_images.transpose(0,1), nrow=4, padding=2).cpu().permute(1,2,0).numpy() #
-            # save_images =  np.uint8(255 * np.float32(save_images))#
-            # save_images = cv2.cvtColor(np.array(save_images), cv2.COLOR_RGB2BGR)#
-            # cv2.imwrite('demo/FRP_samples.png', save_images)#
-            # input('------------------------')
 
         ori_target, target_aux = target, target
         if mixup_fn is not None:
@@ -574,9 +580,9 @@ def train_one_epoch(train_queue, model, model_ema, criterion, optimizer, epoch, 
         #---------------------
         torch.distributed.barrier()
         globals()['Acc'], globals()['Acc_top5'] = accuracy(logits, ori_target, topk=(1, 5))
-        globals()['Acc_1'], _ = accuracy(xs, ori_target, topk=(1, 5))
-        globals()['Acc_2'], _ = accuracy(xm, ori_target, topk=(1, 5))
-        globals()['Acc_3'], _ = accuracy(xl, ori_target, topk=(1, 5))
+        globals()['Acc_s'], _ = accuracy(xs, ori_target, topk=(1, 5))
+        globals()['Acc_m'], _ = accuracy(xm, ori_target, topk=(1, 5))
+        globals()['Acc_l'], _ = accuracy(xl, ori_target, topk=(1, 5))
 
 
         for name in meter_dict:
@@ -622,7 +628,7 @@ def concat_all_gather(tensor):
     return output
 
 @torch.no_grad()
-def infer(valid_queue, model, criterion, local_rank, epoch, device, captuer):
+def infer(valid_queue, model, criterion, local_rank, epoch, device, captuer, obtain_softmax_score=True):
     model.eval()
         
     meter_dict = dict(
@@ -642,18 +648,21 @@ def infer(valid_queue, model, criterion, local_rank, epoch, device, captuer):
         ))
     else:
         meter_dict.update(dict(
-        Acc_1=AverageMeter(),
-        Acc_2=AverageMeter(),
-        Acc_3=AverageMeter(),
-        Acc=AverageMeter(),
-        Acc_top5=AverageMeter(),
+        Acc_sm=AverageMeter(),
+        Acc_sl=AverageMeter(),
+        Acc_lm=AverageMeter(),
+        Acc_all=AverageMeter(),
+        Acc_adaptive=AverageMeter(),
+        # Acc=AverageMeter(),
+        Acc_adaptive_top5=AverageMeter(),
         ))
 
     meter_dict['Infer_Time'] = AverageMeter()
     CE = torch.nn.CrossEntropyLoss()
     MSE = torch.nn.MSELoss()
-    grounds, preds, v_paths = [], [], []
+    grounds, preds, v_paths = [], {0:[], 1:[], 2:[], 3:[], 4:[]}, []
     logits_out = {}
+    softmax_score = {}
     embedding_dict = OrderedDict()
     for step, (inputs, heatmap, target, v_path) in enumerate(valid_queue):
         if args.model_ema or args.FusionNet:
@@ -693,7 +702,14 @@ def infer(valid_queue, model, criterion, local_rank, epoch, device, captuer):
         meter_dict['Infer_Time'].update((time.time() - end) / n)
 
         grounds += target.cpu().tolist()
-        preds += torch.argmax(logits, dim=1).cpu().tolist()
+
+        # save logits from outputs
+        preds[0] += torch.argmax(logits, dim=1).cpu().tolist()
+        preds[1] += torch.argmax(xs+xm+xl, dim=1).cpu().tolist()
+        preds[2] += torch.argmax(xs+xm, dim=1).cpu().tolist()
+        preds[3] += torch.argmax(xs+xl, dim=1).cpu().tolist()
+        preds[4] += torch.argmax(xl+xm, dim=1).cpu().tolist()
+
         v_paths += v_path
         torch.distributed.barrier()
 
@@ -703,10 +719,11 @@ def infer(valid_queue, model, criterion, local_rank, epoch, device, captuer):
             globals()['Acc_rgbd'], globals()['Acc_rgbd_top5'] = accuracy((logits+logit_K)/2., target, topk=(1, 5))
             globals()['Acc_fusion'], globals()['Acc_fusion_top5'] = accuracy((logits + logit_K + output[0] + output[1])/4., target, topk=(1, 5))
         else:
-            globals()['Acc'], globals()['Acc_top5'] = accuracy(logits, target, topk=(1, 5))
-            globals()['Acc_1'], _ = accuracy(xs+xm, target, topk=(1, 5))
-            globals()['Acc_2'], _ = accuracy(xs+xl, target, topk=(1, 5))
-            globals()['Acc_3'], _ = accuracy(xl+xm, target, topk=(1, 5))
+            globals()['Acc_adaptive'], globals()['Acc_adaptive_top5'] = accuracy(logits, target, topk=(1, 5))
+            globals()['Acc_all'], _ = accuracy(xs+xm+xl, target, topk=(1, 5))
+            globals()['Acc_sm'], _ = accuracy(xs+xm, target, topk=(1, 5))
+            globals()['Acc_sl'], _ = accuracy(xs+xl, target, topk=(1, 5))
+            globals()['Acc_lm'], _ = accuracy(xl+xm, target, topk=(1, 5))
 
         for name in meter_dict:
             if 'loss' in name:
@@ -729,7 +746,26 @@ def infer(valid_queue, model, criterion, local_rank, epoch, device, captuer):
             feature_embedding(temp_out, v_path, embedding_dict)
             for t, logit in zip(v_path, logits):
                 logits_out[t] = logit
-                
+        if obtain_softmax_score and args.eval_only:
+            for t, logit in zip(target.cpu().tolist(), logits):
+                if t not in softmax_score:
+                    softmax_score[t] = [torch.softmax(logit, dim=-1).max(-1)[0]]
+                else:
+                    softmax_score[t].append(torch.softmax(logit, dim=-1).max(-1)[0])
+    
+    # select best acc output
+    acc_list = torch.tensor([meter_dict['Acc_adaptive'].avg, meter_dict['Acc_all'].avg, meter_dict['Acc_sm'].avg, meter_dict['Acc_sl'].avg, meter_dict['Acc_lm'].avg])
+    best_idx = torch.argmax(acc_list).tolist()
+    preds = preds[best_idx] # Note: only preds be refined
+
+    if obtain_softmax_score and args.eval_only:
+        softmax_score = dict(sorted(softmax_score.items(), key = lambda i: i[0]))
+        print('\n', 'The confidence scores for categories: ')
+        print('| Class ID \t softmax score |')
+        for k, v in softmax_score.items():
+            print('| {0} \t {1} |'.format(k, round(float(sum(v)/len(v)), 2)))
+        print('-' * 80)
+
     grounds_gather = concat_all_gather(torch.tensor(grounds).to(device))
     preds_gather = concat_all_gather(torch.tensor(preds).to(device))
     grounds_gather, preds_gather = list(map(lambda x: x.cpu().numpy(), [grounds_gather, preds_gather]))
@@ -749,8 +785,8 @@ def infer(valid_queue, model, criterion, local_rank, epoch, device, captuer):
             torch.save(embedding_dict, os.path.join(args.save, 'feature-{}-epoch{}.pth'.format(args.type, epoch)))
 
     if args.FusionNet:
-        return max(meter_dict['Acc_fusion'].avg, meter_dict['Acc_r'].avg, meter_dict['Acc_d'].avg, meter_dict['Acc_rgbd'].avg), meter_dict['Total_loss'].avg, dict(grounds=grounds_gather, preds=preds_gather, valid_images=(v_paths, grounds, preds)), meter_dict, logits_out
-    return max(meter_dict['Acc'].avg, meter_dict['Acc_1'].avg, meter_dict['Acc_2'].avg, meter_dict['Acc_3'].avg), meter_dict['Total_loss'].avg, dict(grounds=grounds_gather, preds=preds_gather, valid_images=(v_paths, grounds, preds)), meter_dict, logits_out
+        return max(meter_dict['Acc_fusion'].avg, meter_dict['Acc_rgbd'].avg), meter_dict['Total_loss'].avg, dict(grounds=grounds_gather, preds=preds_gather, valid_images=(v_paths, grounds, preds)), meter_dict, logits_out
+    return acc_list.tolist()[best_idx], meter_dict['Total_loss'].avg, dict(grounds=grounds_gather, preds=preds_gather, valid_images=(v_paths, grounds, preds)), meter_dict, logits_out
 
 if __name__ == '__main__':
     # import os
@@ -759,7 +795,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args = Config(args)
 
-    if args.save:
+    if args.save and args.local_rank == 0:
         Path(args.save).mkdir(parents=True, exist_ok=True)
 
     try:

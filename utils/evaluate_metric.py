@@ -46,7 +46,7 @@ def plot_confusion_matrix(PREDICTIONS_PATH, grounds, preds, categories, idx, top
     cm = confusion_matrix(grounds, preds, labels=num_cat)
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot()
-    sns.heatmap(cm, annot=False, fmt='g', ax=ax);  # annot=True to annotate cells, ftm='g' to disable scientific notation
+    sns.heatmap(cm, annot=False if numclass > 60 else True, fmt='g', ax=ax);  # annot=True to annotate cells, ftm='g' to disable scientific notation
     
     # labels, title and ticks
     ax.set_title('Confusion Matrix - ' + super_category, fontsize=20)

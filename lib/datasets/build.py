@@ -10,7 +10,10 @@ from .THU_READ import THUREAD
 from .Jester import JesterData
 from .NTU import NTUData
 from .UCF101 import UCFData
+from .base import Datasets
 import logging
+
+from torch.utils.data.sampler import  WeightedRandomSampler
 
 def build_dataset(args, phase):
     modality = dict(
@@ -20,12 +23,12 @@ def build_dataset(args, phase):
     )
     assert args.type in modality, 'Error in modality!'
     Datasets_func = dict(
+        basic=Datasets,
         NvGesture=NvData,
         IsoGD=IsoGDData,
         THUREAD=THUREAD,
         Jester=JesterData,
         NTU=NTUData,
-        UCF101 = UCFData
     )
     assert args.dataset in Datasets_func, 'Error in dataset Function!'
     if args.local_rank == 0:
@@ -36,6 +39,7 @@ def build_dataset(args, phase):
     else:
         splits = args.splits + '/{}.txt'.format(phase)
     dataset = Datasets_func[args.dataset](args, splits, modality[args.type], phase=phase)
+    print(dataset)
     if args.dist:
         data_sampler = DistributedSampler(dataset)
     else:

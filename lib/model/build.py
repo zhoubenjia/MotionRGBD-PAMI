@@ -11,7 +11,7 @@ from timm.models import create_model
 
 import logging
 
-def build_model(args):
+def build_model(args):        
     num_classes = dict(
         IsoGD=249,
         NvGesture=25,
@@ -20,17 +20,12 @@ def build_model(args):
         NTU=60,
         UCF101=101
     )
+    if args.num_classes is not None:
+        num_classes[args.dataset] = args.num_classes
+
     func_dict = dict(
         DSN=DSNNet,
         DSNV2=DSNNetV2,
-        # deit=create_model(
-        # args.model,
-        # args = args,
-        # pretrained=False,
-        # num_classes=num_classes[args.dataset],
-        # drop_rate=args.drop,
-        # drop_path_rate=args.drop_path,
-        # drop_block_rate=None,)
     )
     if args.FusionNet:
         func_dict.update(FusionNet=CrossFusionNet)

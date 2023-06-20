@@ -1,5 +1,15 @@
-# A Unified Multimodal *De-* and *Re*-coupling Framework for RGB-D Motion Recognition [[arxiv](https://arxiv.org/abs/2211.09146)] 
+# [[TPAMI](https://ieeexplore.ieee.org/abstract/document/10122710/)] A Unified Multimodal *De-* and *Re*-coupling Framework for RGB-D Motion Recognition 
 
+arXiv version: [this url](https://arxiv.org/abs/2211.09146)
+
+## News
+***2023/06/20***
+
+1. Add dataset split files.
+2. Fixed some bugs.
+3. Update README.
+
+## 1. Performance
 <p align="center">
   <img width="600" height="300" src="demo/performance.jpg"> 
   <!-- <img width="800" height="200" src="demo/decouple_recouple.jpg"> -->
@@ -7,7 +17,7 @@
   The proposed method (UMDR) outperforms a number of state-of-the-art methods on both action and gesture datasets.
 </p>
 
-## 1. Requirements
+## 2. Requirements
 This is a PyTorch implementation of our paper. 
 torch>=1.7.0; torchvision>=0.8.0; Visdom(optional)
 
@@ -39,14 +49,14 @@ Data prepare: dataset with the following folder structure:
 ```
 It is important to note due to the relatively high resolution of the RGB video in the NTU dataset, instead of directly resizing the video frames from the original resolution (1280x960) to 320x240, we first crop an object-centric ROI area (640x480)  for each frame via the provided mask images, and then resize it to 320x240 for training and testing. Then resize it to 320x240 for training and testing. Please refer to data/data_preprose.py for the related data preprocessing codes.
 
-## 2. Methodology
+## 3. Methodology
 <p align="center">
   <img width="600" height="200" src="demo/architecture.jpg">
   <img width="600" height="300" src="demo/pipline-v2.jpg">
 </p>
  We propose to decouple and recouple spatiotemporal representation for RGB-D-based motion recognition. The Figure in the first line illustrates the proposed multi-modal spatiotemporal representation learning framework. The Figure in the second line shows the learning of decoupling and multi-stage recoupling saptiotemporal representation from a unimodal data.
 
-## 3. Train and Evaluate
+## 4. Train and Evaluate
 All of our models except NTU-RGBD are pre-trained on the [20BN Jester V1 dataset](https://www.kaggle.com/toxicmender/20bn-jester). 
 ### Unimodal Training
 Take training an RGB model with 8 GPUs on the NTU-RGBD dataset as an example,
@@ -70,7 +80,7 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 --use_e
 ```bash
 python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 --use_env train.py --config config/NTU.yml --data /path/to/Dataset/NTU-RGBD/frames --splits /path/to/Dataset/NTU-RGBD/dataset_splits/@CS/  --batch-size 16 --sample-duration 32 --eval_only --resume /path/to/model_best.pth.tar 
 ```
-## 4. Models Download
+## 5. Models Download
 <table>
   <tr>
     <th>Dataset</th>
@@ -148,12 +158,13 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 --use_e
 
 # Citation
 ```
-@inproceedings{zhou2022unif,
-      title={A Unified Multimodal De- and Re-coupling Framework for RGB-D Motion Recognition}, 
-      author={Benjia Zhou, Pichao Wang, Jun Wan, Yanyan Liang, Fan Wang},
-      journal={arXiv preprint arXiv:2211.09146},
-      year={2022},
-}
+@ARTICLE{zhou2023umdr,
+  author={Zhou, Benjia and Wang, Pichao and Wan, Jun and Liang, Yanyan and Wang, Fan},
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence}, 
+  title={A Unified Multimodal De- and Re-Coupling Framework for RGB-D Motion Recognition}, 
+  year={2023},
+  pages={1-15},
+  doi={10.1109/TPAMI.2023.3274783}}
 ```
 # LICENSE
 The code is released under the MIT license.

@@ -563,15 +563,36 @@ def Visfeature(args, model, inputs, v_path=None, weight_softmax=None):
     #------------------------------------------
     # Spatial feature visualization
     #------------------------------------------
-    # feat = model.feat
-    headmap = feat[0,:].detach().cpu().numpy()
-    headmap = np.mean(headmap, axis=0)
-    headmap /= np.max(headmap)  # torch.Size([64, 7, 7])
+    headmap = feat.detach().cpu().numpy()
+    headmap = np.mean(headmap, axis=1)
+    headmap /= np.max(headmap)
     headmap = torch.from_numpy(headmap)
-    img = inputs[0]
+
+    b, c, t, h, w = inputs.shape
+    inputs = inputs.permute(2, 0, 1, 3, 4) #.view(t, b, c, h, w)
+    imgs = []
+    for img in inputs:
+        img = make_grid(img[:16], nrow=4, padding=2).unsqueeze(0)
+        imgs.append(img)
+    imgs = torch.cat(imgs)
+    
+    b, t, h, w = headmap.shape
+    headmap = headmap.permute(1, 0, 2, 3).unsqueeze(2) # .view(t, b, 1, h, w)
+    heatmaps = []
+    for heat in headmap:
+        heat = make_grid(heat[:16], nrow=4, padding=2)[0].unsqueeze(0)
+        heatmaps.append(heat)
+    heatmaps = torch.cat(heatmaps)
+    
+    # feat = model.feat
+    # headmap = feat[0,:].detach().cpu().numpy()
+    # headmap = np.mean(headmap, axis=0)
+    # headmap /= np.max(headmap)  # torch.Size([64, 7, 7])
+    # headmap = torch.from_numpy(headmap)
+    # img = inputs[0]
 
     result_gif, result = [], []
-    for cam, mg in zip(headmap.unsqueeze(1), img.permute(1,2,3,0)):
+    for cam, mg in zip(heatmaps.unsqueeze(1), imgs.permute(0,2,3,1)):
         # cam = torch.argmax(weight_softmax[0]).detach().cpu().dot(cam)
         cam = cv2.resize(cam.squeeze().cpu().numpy(), (mg.shape[0]//2, mg.shape[1]//2))
         cam = np.uint8(255 * cam)

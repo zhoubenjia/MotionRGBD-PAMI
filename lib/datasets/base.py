@@ -45,10 +45,6 @@ class Datasets(Dataset):
     global kpt_dict
     def __init__(self, args, ground_truth, modality, phase='train'):
 
-        def get_data_list_and_label(data_df):
-            return [(lambda arr: (arr[0], int(arr[1]), int(arr[2])))(i[:-1].split(' '))
-                    for i in open(data_df).readlines()]
-
         self.dataset_root = args.data
         self.sample_duration = args.sample_duration
         self.sample_size = args.sample_size
@@ -66,26 +62,30 @@ class Datasets(Dataset):
         else:
             self.transform = transforms.Compose([Normaliztion(), transforms.ToTensor()])
 
-        self.inputs = list(filter(lambda x: x[1] > 16, get_data_list_and_label(ground_truth)))
+        self.inputs, self.video_apth = self.prepropose(ground_truth)
+        
+    def prepropose(self, ground_truth, min_frames=16):
+        def get_data_list_and_label(data_df):
+            return [(lambda arr: (arr[0], int(arr[1]), int(arr[2])))(i[:-1].split(' '))
+                    for i in open(data_df).readlines()]
+
+        self.inputs = list(filter(lambda x: x[1] > min_frames, get_data_list_and_label(ground_truth)))
         self.inputs = list(self.inputs)
         self.video_apth = dict([(self.inputs[i][0], i) for i in range(len(self.inputs))])
-        if phase == 'train':
-            while len(self.inputs) % (args.batch_size * args.nprocs) != 0:
+        return self.inputs, self.video_apth
+    
+    def __str__(self):
+        if self.phase == 'train':
+            while len(self.inputs) % (self.args.batch_size * self.args.nprocs) != 0:
                 sample = random.choice(self.inputs)
                 self.inputs.append(sample)
-            # logging.info('Training Data Size is: {}'.format(len(self.inputs)))
-            print('Training Data Size is: {}'.format(len(self.inputs)))
             frames = [n[1] for n in self.inputs]
-            # logging.info('Average Train Data frames are: {}, max frames: {}, min frames: {}'.format(sum(frames)//len(self.inputs), max(frames), min(frames)))
-            print('Average Train Data frames are: {}, max frames: {}, min frames: {}'.format(sum(frames)//len(self.inputs), max(frames), min(frames)))
+            return 'Training Data Size is: {} \n'.format(len(self.inputs)) + 'Average Train Data frames are: {}, max frames: {}, min frames: {}\n'.format(sum(frames)//len(self.inputs), max(frames), min(frames))
         else:
-            # logging.info('Validation Data Size is: {} '.format(len(self.inputs)))
-            print('Validation Data Size is: {} '.format(len(self.inputs)))
             frames = [n[1] for n in self.inputs]
-            # logging.info('Average Train Data frames are: {}, max frames: {}, min frames: {}'.format(
-            #     sum(frames) // len(self.inputs), max(frames), min(frames)))
-            print('Average Train Data frames are: {}, max frames: {}, min frames: {}'.format(
-                sum(frames) // len(self.inputs), max(frames), min(frames)))
+            return 'Validation Data Size is: {} \n'.format(len(self.inputs)) + 'Average validation Data frames are: {}, max frames: {}, min frames: {}\n'.format(
+                sum(frames) // len(self.inputs), max(frames), min(frames))
+        # self.frame_num = {'avg': sum(frames) // len(self.inputs), 'max': max(frames), 'min': min(frames)}
 
     def transform_params(self, resize=(320, 240), crop_size=224, flip=0.5):
         if self.phase == 'train':
@@ -216,49 +216,7 @@ class Datasets(Dataset):
             return arrrp
 
         return Sample_Image(data_path, sl)
-        # def DynamicImage(frames, dynamic_only): # frames: [[3, 224, 224, 1], ]
-        #     def tensor_arr_rp(arr):
-        #         l = len(arr)
-        #         statics = []
-        #         def tensor_rankpooling(video_arr, lamb=1.):
-        #             def get_w(N):
-        #                 return [float(i) * 2 - N - 1 for i in range(1, N + 1)]
-
-        #             # re = torch.zeros(video_arr[0].size(0), 1, video_arr[0].size(2), video_arr[0].size(3)).cuda()
-        #             re = torch.zeros(video_arr[0].size())
-        #             for a, b in zip(video_arr, get_w(len(video_arr))):
-        #                 # a = transforms.Grayscale(1)(a)
-        #                 re += a * b
-        #             re = F.relu(re) * lamb
-        #             re -= torch.min(re)
-        #             re = re / torch.max(re) if torch.max(re) != 0 else re / (torch.max(re) + 0.00001)
-
-        #             re = transforms.Grayscale(1)(re.squeeze())
-        #             # Static Attention
-        #             static = torch.where(re > torch.mean(re), re, torch.full_like(re, 0))
-        #             static = np.asarray(static.squeeze())
-        #             # static = cv2.morphologyEx(static, cv2.MORPH_OPEN, kernel=np.ones((3, 3), np.uint8))
-        #             kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-        #             static = cv2.erode(static, kernel)
-        #             kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        #             static = cv2.dilate(static, kernel)
-        #             static -= np.min(static)
-        #             static = static / np.max(static) if np.max(static) != 0 else static / (np.max(static) + 0.00001)
-        #             statics.append(torch.from_numpy(static).unsqueeze(0))
-        #             return re
-
-        #         return [tensor_rankpooling(arr[i:i + self._w]) for i in range(l)], statics
-        #     arrrp, statics = tensor_arr_rp(frames)
-        #     arrrp = torch.cat(arrrp, dim=0) # torch.Size([64, 224, 224])
-        #     t, h, w = arrrp.shape
-        #     mask = torch.zeros(self._w - 1, h, w)
-        #     garrs = torch.cat((mask, arrrp), dim=0)[:t, :]
-        #     statics = torch.cat(statics)
-        #     statics = torch.cat((mask, statics))[:t, :]
-        #     if dynamic_only:
-        #         return garrs
-        #     return (garrs + statics) * statics
-        # return Sample_Image(data_path, sl)
+      
 
     def get_sl(self, clip):
         sn = self.sample_duration if not self.args.frp else self.sample_duration+1
@@ -292,8 +250,9 @@ class Datasets(Dataset):
         """
         sl = self.get_sl(self.inputs[index][1])
         self.data_path = os.path.join(self.dataset_root, self.inputs[index][0])
-        self.clip = self.image_propose(self.data_path, sl)
-        return self.clip.permute(0, 3, 1, 2), self.inputs[index][2]
+        self.clip, skgmaparr = self.image_propose(self.data_path, sl)
+        return self.clip.permute(0, 3, 1, 2), skgmaparr.permute(0, 3, 1, 2), self.inputs[index][2], self.inputs[index][0]
+        
     def __len__(self):
         return len(self.inputs)
 
