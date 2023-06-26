@@ -100,7 +100,7 @@ def get_args_parser():
     # Learning rate schedule parameters
     parser.add_argument('--sched', default='cosine', type=str, metavar='SCHEDULER',
                         help='LR scheduler (default: "cosine", "step", "multistep"')
-    parser.add_argument('--lr', type=float, default=5e-4, metavar='LR',
+    parser.add_argument('--lr', type=float, default=1e-2, metavar='LR',
                         help='learning rate (default: 5e-4)')
     parser.add_argument('--lr-noise', type=float, nargs='+', default=None, metavar='pct, pct',
                         help='learning rate noise on/off epoch percentages')
@@ -127,8 +127,8 @@ def get_args_parser():
                         help='LR decay rate (default: 0.1)') 
     
     # Optimizer parameters
-    parser.add_argument('--opt', default='adamw', type=str, metavar='OPTIMIZER',
-                        help='Optimizer (default: "adamw"')
+    parser.add_argument('--opt', default='sgd', type=str, metavar='OPTIMIZER',
+                        help='Optimizer (default: "sgd"')
     parser.add_argument('--opt-eps', default=1e-8, type=float, metavar='EPSILON',
                         help='Optimizer Epsilon (default: 1e-8)')
     parser.add_argument('--opt-betas', default=None, type=float, nargs='+', metavar='BETA',
@@ -361,7 +361,7 @@ def main(args):
         best_score=0.0
     )
 
-    first_test = False
+    first_test = True
     if first_test:
         args.distill_lamdb = args.distill
         valid_acc, _, valid_dict, meter_dict, output = infer(valid_queue, model, criterion, local_rank, strat_epoch, device, captuer)
@@ -519,22 +519,28 @@ def train_one_epoch(train_queue, model, model_ema, criterion, optimizer, epoch, 
             (logits, xs, xm, xl), temp_out = model(inputs)
 
         Total_loss = 0.0
+
+        if args.MultiLoss:
+            lamd1, lamd2, lamd3, lamd4 = map(float, args.loss_lamdb)
+            globals()['CE_loss'] = lamd1*criterion(logits, target) + lamd2*criterion(xs, target) + lamd3*criterion(xm, target) + lamd4*criterion(xl, target)
+        else:
+            globals()['CE_loss'] = criterion(logits, target)
+        Total_loss += CE_loss
+
+        if args.distill:
+            globals()['Distil_loss'] = rcm_loss(temp_out) * args.distill_lamdb
+            Total_loss += Distil_loss
+
+        if args.model_ema:
+            globals()['DC_loss'] = args.DC_weight * CE(logits, pseduo_targets)
+            Total_loss += DC_loss
+
+        if args.FusionNet:
+            globals()['Fusion_loss'] = fusion_loss
+            Total_loss = fusion_loss
+            globals()['Acc_fusion'], globals()['Acc_fusion_top5'] = accuracy((output[0] + output[1])/2.0, ori_target, topk=(1, 5))
+
         if args.ACCUMULATION_STEPS > 1:
-            if args.MultiLoss:
-                lamd1, lamd2, lamd3, lamd4 = map(float, args.loss_lamdb)
-                globals()['CE_loss'] = lamd1*criterion(logits, target) + lamd2*criterion(xs, target) + lamd3*criterion(xm, target) + lamd4*criterion(xl, target)
-            else:
-                globals()['CE_loss'] = criterion(logits, target)
-            Total_loss += CE_loss
-
-            if args.distill:
-                globals()['Distil_loss'] = rcm_loss(temp_out) * args.distill_lamdb
-                Total_loss += Distil_loss
-
-            if args.model_ema:
-                globals()['DC_loss'] = args.DC_weight * criterion(logits+logit_aux, (target + target_aux) / 2.)
-                Total_loss += DC_loss
-
             globals()['Total_loss']  = Total_loss / args.ACCUMULATION_STEPS
 
             Total_loss.backward()
@@ -543,26 +549,6 @@ def train_one_epoch(train_queue, model, model_ema, criterion, optimizer, epoch, 
                 optimizer.step()
                 optimizer.zero_grad()
         else:
-            if args.MultiLoss:
-                lamd1, lamd2, lamd3, lamd4 = map(float, args.loss_lamdb)
-                globals()['CE_loss'] = lamd1*criterion(logits, target) + lamd2*criterion(xs, target) + lamd3*criterion(xm, target) + lamd4*criterion(xl, target)
-            else:
-                globals()['CE_loss'] = criterion(logits, target)
-            Total_loss += CE_loss
-
-            if args.distill:
-                globals()['Distil_loss'] = rcm_loss(temp_out) * args.distill_lamdb
-                Total_loss += Distil_loss
-
-            if args.model_ema:
-                globals()['DC_loss'] = args.DC_weight * CE(logits, pseduo_targets)
-                Total_loss += DC_loss
-            
-            if args.FusionNet:
-                globals()['Fusion_loss'] = fusion_loss
-                Total_loss = fusion_loss
-                globals()['Acc_fusion'], globals()['Acc_fusion_top5'] = accuracy((output[0] + output[1])/2.0, ori_target, topk=(1, 5))
-
             globals()['Total_loss']  = Total_loss
             
             optimizer.zero_grad()
@@ -653,7 +639,6 @@ def infer(valid_queue, model, criterion, local_rank, epoch, device, captuer, obt
         Acc_lm=AverageMeter(),
         Acc_all=AverageMeter(),
         Acc_adaptive=AverageMeter(),
-        # Acc=AverageMeter(),
         Acc_adaptive_top5=AverageMeter(),
         ))
 

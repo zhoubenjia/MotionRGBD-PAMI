@@ -57,7 +57,8 @@ NOTE: We use the NTU dataset’s high-resolution RGB video (1280x960). To avoid 
  We propose to decouple and recouple spatiotemporal representation for RGB-D-based motion recognition. The Figure in the first line illustrates the proposed multi-modal spatiotemporal representation learning framework. The Figure in the second line shows the learning of decoupling and multi-stage recoupling saptiotemporal representation from a unimodal data.
 
 ## 4. Train and Evaluate
-All of our models except NTU-RGBD are pre-trained on the [20BN Jester V1 dataset](https://www.kaggle.com/toxicmender/20bn-jester). 
+We pre-trained all of our models on the [20BN Jester V1 dataset](https://www.kaggle.com/toxicmender/20bn-jester), except for NTU-RGBD. Alternatively, one can use the parameters trained on NTU-RGBD to initialize the model before training on other datasets, such as IsoGD, NvGesture and THU-READ.
+
 ### Unimodal Training
 Take training an RGB model with 8 GPUs on the NTU-RGBD dataset as an example,
 
@@ -65,7 +66,11 @@ Take training an RGB model with 8 GPUs on the NTU-RGBD dataset as an example,
 # type: M(rgb), K(depth); sample-duration: the length of the video clip;  smprob: hyperparameter  $\rho$; mixup: hyperparameter  $\alpha_{m}$; shufflemix: $\alpha_{s}$; intar-fatcer: Controls the temporal resolution of each sub-branch in DTN (default: set 2 when sample-duration=16/32;  set 4 when sample-duration=64).
 
 python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 --use_env train.py --config config/NTU.yml --data /path/to/Dataset/NTU-RGBD/frames --splits /path/to/Dataset/NTU-RGBD/dataset_splits/@CS/ --save ./output_dir/ --batch-size 16  --sample-duration 32 \
---smprob 0.2 --mixup 0.8 --shufflemix 0.3 --epochs 100 --distill 0.2 --type M --intar-fatcer 2 
+--opt sgd \
+--lr 0.01 \
+--sched cosine \
+--smprob 0.2 --mixup 0.8 --shufflemix 0.3 --epochs 100 --distill 0.2 --type M --intar-fatcer 2 \
+--finetune ./Checkpoints/NTU-RGBD-32-DTNV2-TSM/model_best.pth.tar
 ```
 
 ### Cross-modal Fusion
