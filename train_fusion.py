@@ -395,7 +395,6 @@ def main(args):
             'scheduler': scheduler.state_dict(),
             'scaler': loss_scaler.state_dict(),
             'args': args,
-            'model_ema': get_state_dict(model_ema) if model_ema is not None else None,
             }
             save_checkpoint(state, isbest, args.save)
 
