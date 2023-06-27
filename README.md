@@ -69,6 +69,16 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 --use_e
 --opt sgd \
 --lr 0.01 \
 --sched cosine \
+--smprob 0.2 --mixup 0.8 --shufflemix 0.3 --epochs 100 --distill 0.2 --type M --intar-fatcer 2 
+```
+
+Take training an RGB model with 8 GPUs on the IsoGD dataset as an example,
+
+```bash
+python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 --use_env train.py --config config/IsoGD.yml --data /path/to/Dataset/IsoGD/frames --splits ./data/dataset_splits/IsoGD/rgb/ --save ./output_dir/ --batch-size 16  --sample-duration 32 \
+--opt sgd \
+--lr 0.01 \
+--sched cosine \
 --smprob 0.2 --mixup 0.8 --shufflemix 0.3 --epochs 100 --distill 0.2 --type M --intar-fatcer 2 \
 --finetune ./Checkpoints/NTU-RGBD-32-DTNV2-TSM/model_best.pth.tar
 ```
