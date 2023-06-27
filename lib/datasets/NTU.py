@@ -59,7 +59,7 @@ class NTUData(Datasets):
 
         if self.typ == 'rgb':
             return os.path.join(imgs_path, "%06d.jpg" % int(a + 1))
-        else:
+        elif self.typ == 'depth':
             return os.path.join(imgs_path, "MDepth-%08d.png" % int(a + 1))
 
     def __len__(self):

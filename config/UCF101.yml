@@ -25,7 +25,7 @@ common:
   loss_lamdb: [ 1, 0.5, 0.5, 0.5 ]
 
 model:
-  Network: DSNV2 # e.g., DSN or FusionNet
+  Network: DSNV2 # e.g., DSNV2 or FusionNet
   pretrained: ''
   resumelr: ''
   SYNC_BN: 1

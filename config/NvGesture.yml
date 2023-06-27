@@ -3,10 +3,7 @@ common:
   visdom:
     enable: False
     visname: NvGesture
-
   dataset: NvGesture #Database name e.g., NTU, THUREAD ...
-  test_batch_size: 40
-  init_epochs: 0
   report_freq: 10
   dist: True
   vis_feature: True # Visualization?
@@ -23,12 +20,9 @@ common:
   loss_lamdb: [ 1, 0.5, 0.5, 0.5 ]
 
 model:
-  Network: DSNV2
-  pretrained: ''
+  Network: DSNV2 # e.g., DSNV2 or FusionNet
   resumelr: ''
   SYNC_BN: 1
-  # w: 4
-  # temper: 0.4
   recoupling: True
   knn_attention: 0.7
   sharpness: True
@@ -41,14 +35,12 @@ fusion:
   #-------Used for fusion network----------
   rgb_checkpoint:  
     cs16: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-16-DTNV2-M/model_best.pth.tar
-    cs32: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-32-DTNV2-M/model_best.pth.tar-per-iso #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-32-diff/model_best.pth.tar
-    cs64: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-64-DTNV2-M/model_best.pth.tar-loss-refine #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-64-DTNV2-M/model_best.pth.tar-sm-0.1 #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-64-DTNV2-M/model_best.pth.tar-sm-0.5 #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-64-DTNV2-M/model_best.pth.tar-mixup-0.2 #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-64-SGD-distill-CE-mixup/model_best.pth.tar
+    cs32: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-32-DTNV2-M/model_best.pth.tar-per-iso 
+    cs64: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-64-DTNV2-M/model_best.pth.tar-loss-refine 
   depth_checkpoint:
     cs16: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-16-DTNV2-K/model_best.pth.tar-per-iso
     cs32: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-32-DTNV2-K/model_best.pth.tar-per-iso
-    cs64: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-64-DTNV2-K/model_best.pth.tar-pre-89.24 #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-64-DTNV2-K/model_best.pth.tar-per-cross #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-64-SGD-distill-CE-mixup-K/model_best.pth.tar
-  # rgb_checkpoint: '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-32-diff/model_best.pth.tar' #'/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-64-SGD-distill-CE-mixup/model_best.pth.tar' #'/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-32-CS-DTNV2-SGD-32-batchsize/model_best.pth.tar'
-  # depth_checkpoint: '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-32-diff-K/model_best.pth.tar' #'/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-64-SGD-distill-CE-mixup-K/model_best.pth.tar'
+    cs64: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NV-64-DTNV2-K/model_best.pth.tar-pre-89.24 
 
 dataset:
   flip: 0.0

@@ -26,11 +26,8 @@ def build_model(args):
     func_dict = dict(
         DSN=DSNNet,
         DSNV2=DSNNetV2,
+        FusionNet=CrossFusionNet
     )
-    if args.FusionNet:
-        func_dict.update(FusionNet=CrossFusionNet)
-        # func_dict.update(FusionNet=SFNNet)
-        args.Network = 'FusionNet'
     assert args.dataset in num_classes, 'Error in load dataset !'
     assert args.Network in func_dict, 'Error in Network function !'
     args.num_classes = num_classes[args.dataset]
@@ -38,7 +35,4 @@ def build_model(args):
     if args.local_rank == 0:
         logging.info('Model:{}, Total Categories:{}'.format(args.Network, args.num_classes))
 
-    if 'deit' in args.Network:
-        return func_dict[args.Network]
-    
     return func_dict[args.Network](args, num_classes=args.num_classes, pretrained=args.pretrained)

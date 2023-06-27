@@ -18,7 +18,7 @@ import numpy as np
 import torch
 from einops import rearrange, repeat
 import random
-from .utils import *
+from .shufflemix import *
 
 def one_hot(x, num_classes, on_value=1., off_value=0., device='cuda'):
     x = x.long().view(-1, 1)
@@ -165,7 +165,6 @@ class Mixup:
             lam = float(lam_mix)
             if self.args.mixup_dynamic:
                 lam = np.random.uniform(0, float(self.bata_range[self.args.epoch]))
-                # lam = np.random.uniform(0.4, 0.6)
         return lam, use_cutmix
 
     def _mix_elem(self, x):
@@ -216,13 +215,15 @@ class Mixup:
         return torch.tensor(lam_batch, device=x.device, dtype=x.dtype).unsqueeze(1)
 
     def _mix_batch(self, x, target):
+        """
+        :param x: x.shape = (batch_size, 3, seq_len, 224, 224)
+        """
         lam, use_cutmix = self._params_per_batch()
         if lam == 1.:
             return 1.
         if use_cutmix:
             (yl, yh, xl, xh), lam = cutmix_bbox_and_lam(
                 x.shape, lam, ratio_minmax=self.cutmix_minmax, correct_lam=self.correct_lam)
-            # x[:, :, yl:yh, xl:xh] = x.flip(0)[:, :, yl:yh, xl:xh]
             x[:, :, :, yl:yh, xl:xh] = x.flip(0)[:, :, :, yl:yh, xl:xh]
 
         else:
@@ -234,26 +235,27 @@ class Mixup:
                 return lam
 
             if np.random.rand() < self.args.smprob:
-                lam = np.random.beta(self.args.shufflemix, self.args.shufflemix)
-                if self.args.smixmode == 'sm':
-                    ShuffleMix(x, lam)
-                    # lam = ShuffleMix_plus(x, lam, self.args.smprob)
-                elif self.args.smixmode == 'sm_v1':
-                    ShuffleMix_v1(x, lam)
-                elif self.args.smixmode == 'sm_v2':
-                    ShuffleMix_v2(x, lam)
-                elif self.args.smixmode == 'sm_v3':
-                    ShuffleMix_v3(x, lam)
-                elif self.args.smixmode == 'mu_sm':
-                    Mixup_ShuffleMix(x, lam)
-                else:
-                    raise Exception (f'No ShuffleMix strategy {self.args.smixmode} be found !')
-
+                lam = self._shufflemix_batch(x)
             else:
-                # torch.Size([16, 3, 16, 224, 224])
                 x_flipped = x.flip(0).mul_(1. - lam)
                 x.mul_(lam).add_(x_flipped)
 
+        return lam
+    
+    def _shufflemix_batch(self, x):
+        lam = np.random.beta(self.args.shufflemix, self.args.shufflemix)
+        if self.args.smixmode == 'sm':
+            ShuffleMix(x, lam)
+        elif self.args.smixmode == 'sm_v1':
+            ShuffleMix_v1(x, lam)
+        elif self.args.smixmode == 'sm_v2':
+            ShuffleMix_v2(x, lam)
+        elif self.args.smixmode == 'sm_v3':
+            ShuffleMix_v3(x, lam)
+        elif self.args.smixmode == 'mu_sm':
+            Mixup_ShuffleMix(x, lam)
+        else:
+            raise Exception (f'No ShuffleMix strategy {self.args.smixmode} be found !')
         return lam
 
     def __call__(self, x, target):

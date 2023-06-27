@@ -8,7 +8,6 @@ import shutil
 import cv2
 import os, random, math
 import sys
-# sys.path.append(os.path.join('..', os.path.abspath(os.path.join(os.getcwd()))) )
 from pathlib import Path
 
 from timm.scheduler import create_scheduler
@@ -60,7 +59,7 @@ def get_args_parser():
 
     parser.add_argument('--batch-size', default=16, type=int)
     parser.add_argument('--test-batch-size', default=32, type=int)
-    parser.add_argument('--num_workers', default=10, type=int)
+    parser.add_argument('--num_workers', default=8, type=int)
     parser.add_argument('--epochs', default=100, type=int)
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -74,7 +73,6 @@ def get_args_parser():
 
 
     parser.add_argument('--save_grid_image', action='store_true', help='Save samples?')
-    parser.add_argument('--save_output', action='store_true', help='Save logits?')
     parser.add_argument('--demo_dir', type=str, default='./demo', help='The dir for save all the demo')
     parser.add_argument('--resume', default='', help='resume from checkpoint')
 
@@ -159,10 +157,6 @@ def get_args_parser():
 
     parser.add_argument('--mixup-dynamic', action='store_true', default=False, help='')
 
-    parser.add_argument('--model-ema', action='store_true')
-    parser.add_argument('--model-ema-decay', type=float, default=0.99996, help='')
-    parser.add_argument('--model-ema-force-cpu', action='store_true', default=False, help='')
-
     # Augmentation parameters
     parser.add_argument('--autoaug', action='store_true')
     parser.add_argument('--color-jitter', type=float, default=0.4, metavar='PCT',
@@ -223,15 +217,20 @@ def get_args_parser():
     # * Cross modality loss params
     parser.add_argument('--DC-weight', type=float, default=0.2, metavar='cross depth loss weight')
 
-    # * Rank Pooling params
-    parser.add_argument('--frp-num', type=int, default=0, metavar='The Number of Epochs.')
-    parser.add_argument('--w', type=int, default=4, metavar='The slide window of FRP.')
-
     # * fp16 params
     parser.add_argument('--fp16', action='store_true')
     parser.add_argument('--amp-opt-level', type=str, default='O1', choices=['O0', 'O1', 'O2'],
                         help='mixed precision opt level, if O0, no amp is used')
-    
+
+    # * Rank Pooling params
+    parser.add_argument('--frp-num', type=int, default=0, metavar='The Number of Epochs.')
+    parser.add_argument('--w', type=int, default=4, metavar='The slide window of FRP.')
+
+    parser.add_argument('--FusionNet', default='cs32', choices=['cs16', 'cs32', 'cs64', 'cv16', 'cv32', 'cv64'],
+                        help='used for multi-modal fusion.')
+    parser.add_argument('--scc-depth', type=int, default=2, metavar='SCC depth')
+    parser.add_argument('--tcc-depth', type=int, default=4, metavar='TCC depth')
+
     return parser
 
 def reduce_mean(tensor, nprocs):
@@ -243,6 +242,10 @@ def reduce_mean(tensor, nprocs):
 def main(args):
     utils.init_distributed_mode(args)
     print(args)
+
+    if args.Network != 'FusionNet':
+        logging.info('Reset the model to the fusion training state.')
+        args.Network = 'FusionNet'
 
     if not torch.cuda.is_available():
         logging.info('no gpu device available')
@@ -317,22 +320,18 @@ def main(args):
         best_acc = 0.0
         args.epoch = strat_epoch
     
-    model_ema = None
-    if args.model_ema:
-        # Important to create EMA model after cuda(), DP wrapper, and AMP but before SyncBN and DDP wrapper
-        model_ema = ModelEma(
-            model_without_ddp,
-            decay=args.model_ema_decay,
-            device='cpu' if args.model_ema_force_cpu else '',
-            resume=args.finetune
-            )
-
     if local_rank == 0:
         logging.info("param size = %fMB", utils.count_parameters_in_MB(model))
         logging.info("learnable param size = %fMB", utils.count_learnable_parameters_in_MB(model))
         if hasattr(model_without_ddp, 'flops'):
             flops = model_without_ddp.flops()
             logging.info(f"number of GFLOPs: {flops / 1e9}")
+    
+    captuer=None
+    if args.FusionNet:
+        captuer = FeatureCapter(args, num_classes=args.num_classes)
+        captuer = captuer.to(device)
+        captuer.eval()
 
     train_results = dict(
         train_score=[],
@@ -345,7 +344,7 @@ def main(args):
     first_test = True
     if first_test:
         args.distill_lamdb = args.distill
-        valid_acc, _, valid_dict, meter_dict, output = infer(valid_queue, model, criterion, local_rank, strat_epoch, device)
+        valid_acc, _, valid_dict, meter_dict, output = infer(valid_queue, model, criterion, local_rank, strat_epoch, device, captuer)
         
         from sklearn.metrics import confusion_matrix, auc, roc_curve, roc_auc_score
         num_cat = []
@@ -370,8 +369,6 @@ def main(args):
             print('| {0} \t {1} \t {2} |'.format(i, round(Accuracy[i], 2), round(Precision[i], 2)))
         print('-' * 80)
         
-        if args.save_output:
-            torch.save(output, os.path.join(args.save, '{}-output.pth'.format(args.type)))
         if args.eval_only:
             return
 
@@ -379,20 +376,9 @@ def main(args):
         train_sampler.set_epoch(epoch)
         model.drop_path_prob = args.drop_path_prob * epoch / args.epochs
 
-        if epoch <= args.warmup_epochs:
-            args.distill_lamdb = 0.
-        else:
-            args.distill_lamdb = args.distill
-        
-        # Warm-Up with FRP
-        if epoch < args.frp_num: 
-            args.frp = True
-        else:
-            args.frp = False
-
         args.epoch = epoch
-        train_acc, train_obj, meter_dict_train = train_one_epoch(train_queue, model, model_ema, criterion, optimizer, epoch, local_rank, loss_scaler, device, mixup_fn)
-        valid_acc, valid_obj, valid_dict, meter_dict_val, output = infer(valid_queue, model, criterion, local_rank, epoch, device)
+        train_acc, train_obj, meter_dict_train = train_one_epoch(train_queue, model, criterion, optimizer, epoch, local_rank, loss_scaler, device, mixup_fn, captuer)
+        valid_acc, valid_obj, valid_dict, meter_dict_val, output = infer(valid_queue, model, criterion, local_rank, epoch, device, captuer)
         scheduler.step(epoch)
 
         if local_rank == 0:
@@ -428,35 +414,33 @@ def main(args):
                                'cosin_similar': meter_dict_val['cosin_similar'].avg}, 'Valid-' + args.type, epoch)
 
             if isbest:
-                if args.save_output:
-                    torch.save(output, os.path.join(args.save, '{}-output.pth'.format(args.type)))
                 EvaluateMetric(PREDICTIONS_PATH=args.save, train_results=train_results, idx=epoch)
                 for k, v in train_results.items():
                     if isinstance(v, list):
                         v.clear()
 
-def train_one_epoch(train_queue, model, model_ema, criterion, optimizer, epoch, local_rank, loss_scaler, device,
-        mixup_fn=None
+def train_one_epoch(train_queue, model, criterion, optimizer, epoch, local_rank, loss_scaler, device,
+        mixup_fn=None, captuer=None
         ):
     model.train()
 
     meter_dict = dict(
         Total_loss=AverageMeter(),
-        CE_loss=AverageMeter(),
     )
     meter_dict['Data_Time'] = AverageMeter()
     meter_dict.update(dict(
         Acc_s=AverageMeter(),
         Acc_m=AverageMeter(),
         Acc_l=AverageMeter(),
-        Acc=AverageMeter(),
-        Acc_top5=AverageMeter(),
+        Acc_rgbd=AverageMeter(),
+        Acc_rgbd_top5=AverageMeter(),
+        Acc_all = AverageMeter(),
+        Acc_all_top5=AverageMeter(),
     ))
 
-    if args.distill:
-        meter_dict['Distil_loss'] = AverageMeter()
-    if args.model_ema:
-        meter_dict['DC_loss'] = AverageMeter()
+    meter_dict['Fusion_loss'] = AverageMeter()
+    meter_dict['Acc_fusion'] = AverageMeter()
+    meter_dict['Acc_fusion_top5'] = AverageMeter()
 
     end = time.time()
     CE = torch.nn.CrossEntropyLoss()
@@ -464,46 +448,27 @@ def train_one_epoch(train_queue, model, model_ema, criterion, optimizer, epoch, 
     rcm_loss = RCM_loss(args, model.module)
 
     for step, (inputs, heatmap, target, _) in enumerate(train_queue):
-        if args.model_ema:
-            inputs, inputs_aux = inputs
-            heatmap, heatmap_aux = heatmap
-            inputs_aux, heatmap_aux = map(lambda x: x.to(device, non_blocking=True), [inputs_aux, heatmap_aux])
+        inputs, inputs_aux = inputs
+        heatmap, heatmap_aux = heatmap
+        inputs_aux, heatmap_aux = map(lambda x: x.to(device, non_blocking=True), [inputs_aux, heatmap_aux])
         
         meter_dict['Data_Time'].update((time.time() - end)/args.batch_size)
         inputs, target, heatmap = map(lambda x: x.to(device, non_blocking=True), [inputs, target, heatmap])
 
-        if args.frp:
-            inputs = heatmap
-
         ori_target, target_aux = target, target
         if mixup_fn is not None:
             inputs, target = mixup_fn(inputs, target)
-            if args.model_ema:
-                inputs_aux, target_aux = mixup_fn(inputs_aux, ori_target)
+            inputs_aux, target_aux = mixup_fn(inputs_aux, ori_target)
         
-        if args.model_ema:
-            with torch.no_grad():
-                (logit_aux, dxs, dxm, dxl), _, = model_ema(inputs_aux)
-                pseduo_targets = torch.argmax(logit_aux, dim=-1)
         images = inputs
-        (logits, xs, xm, xl), temp_out = model(inputs)
+        with torch.no_grad():
+            (logits, xs, xm, xl), (logit_K, K_xs, K_xm, K_xl), hidden_feature = captuer(inputs, inputs_aux)
+        output, _ = model(hidden_feature)
+        fusion_loss = criterion(output[0], target) + criterion(output[1], target_aux)
 
-        Total_loss = 0.0
-
-        if args.MultiLoss:
-            lamd1, lamd2, lamd3, lamd4 = map(float, args.loss_lamdb)
-            globals()['CE_loss'] = lamd1*criterion(logits, target) + lamd2*criterion(xs, target) + lamd3*criterion(xm, target) + lamd4*criterion(xl, target)
-        else:
-            globals()['CE_loss'] = criterion(logits, target)
-        Total_loss += CE_loss
-
-        if args.distill:
-            globals()['Distil_loss'] = rcm_loss(temp_out) * args.distill_lamdb
-            Total_loss += Distil_loss
-
-        if args.model_ema:
-            globals()['DC_loss'] = args.DC_weight * CE(logits, pseduo_targets)
-            Total_loss += DC_loss
+        globals()['Fusion_loss'] = fusion_loss
+        Total_loss = fusion_loss
+        globals()['Acc_fusion'], globals()['Acc_fusion_top5'] = accuracy((output[0] + output[1])/2.0, ori_target, topk=(1, 5))
 
         if args.ACCUMULATION_STEPS > 1:
             globals()['Total_loss']  = Total_loss / args.ACCUMULATION_STEPS
@@ -530,11 +495,11 @@ def train_one_epoch(train_queue, model, model_ema, criterion, optimizer, epoch, 
         # Meter performance
         #---------------------
         torch.distributed.barrier()
-        globals()['Acc'], globals()['Acc_top5'] = accuracy(logits, ori_target, topk=(1, 5))
-        globals()['Acc_s'], _ = accuracy(xs, ori_target, topk=(1, 5))
-        globals()['Acc_m'], _ = accuracy(xm, ori_target, topk=(1, 5))
-        globals()['Acc_l'], _ = accuracy(xl, ori_target, topk=(1, 5))
-
+        globals()['Acc_rgbd'], globals()['Acc_rgbd_top5'] = accuracy(logits+logit_K, ori_target, topk=(1, 5))
+        globals()['Acc_all'], globals()['Acc_all_top5'] = accuracy((output[0] + output[1] + logits + logit_K)/4.0, ori_target, topk=(1, 5))
+        globals()['Acc_s'], _ = accuracy(xs+K_xs, ori_target, topk=(1, 5))
+        globals()['Acc_m'], _ = accuracy(xm+K_xm, ori_target, topk=(1, 5))
+        globals()['Acc_l'], _ = accuracy(xl+K_xl, ori_target, topk=(1, 5))
 
         for name in meter_dict:
             if 'loss' in name:
@@ -553,18 +518,15 @@ def train_one_epoch(train_queue, model, model_ema, criterion, optimizer, epoch, 
             print_func(log_info)
 
             if args.vis_feature:
-                Visfeature(args, model.module, images, weight_softmax=torch.softmax(logits, dim=-1))
+                Visfeature(args, model.module, images, weight_softmax=torch.softmax(logits, dim=-1), FusionNet=True)
         end = time.time()
 
-        torch.cuda.synchronize()
-        if model_ema is not None:
-            model_ema.update(model)
     if local_rank == 0:
         print('*'*20)
         print_func(dict([(name,  meter_dict[name].avg) for name in meter_dict]))
         print('*'*20)
 
-    return meter_dict['Acc'].avg, meter_dict['Total_loss'].avg, meter_dict
+    return meter_dict['Acc_all'].avg, meter_dict['Total_loss'].avg, meter_dict
 
 @torch.no_grad()
 def concat_all_gather(tensor):
@@ -579,75 +541,61 @@ def concat_all_gather(tensor):
     return output
 
 @torch.no_grad()
-def infer(valid_queue, model, criterion, local_rank, epoch, device, obtain_softmax_score=True):
+def infer(valid_queue, model, criterion, local_rank, epoch, device, captuer, obtain_softmax_score=True):
     model.eval()
         
     meter_dict = dict(
         Total_loss=AverageMeter(),
     )
-
     meter_dict.update(dict(
-    Acc_sm=AverageMeter(),
-    Acc_sl=AverageMeter(),
-    Acc_lm=AverageMeter(),
-    Acc_all=AverageMeter(),
-    Acc_adaptive=AverageMeter(),
-    Acc_adaptive_top5=AverageMeter(),
+    Acc_r=AverageMeter(),
+    Acc_r_top5=AverageMeter(),
+    Acc_d=AverageMeter(),
+    Acc_d_top5=AverageMeter(),
+    Acc_rgbd = AverageMeter(),
+    Acc_rgbd_top5=AverageMeter(),
+    Acc_fusion=AverageMeter(),
+    Acc_fusion_top5=AverageMeter(),
     ))
 
     meter_dict['Infer_Time'] = AverageMeter()
     CE = torch.nn.CrossEntropyLoss()
     MSE = torch.nn.MSELoss()
-    grounds, preds, v_paths = [], {0:[], 1:[], 2:[], 3:[], 4:[]}, []
+    grounds, preds, v_paths = [], {0:[], 1:[]}, []
     logits_out = {}
     softmax_score = {}
     embedding_dict = OrderedDict()
     for step, (inputs, heatmap, target, v_path) in enumerate(valid_queue):
-        if args.model_ema:
-            inputs, inputs_aux = inputs
-            heatmap, heatmap_aux = heatmap
-            inputs_aux, heatmap_aux = map(lambda x: x.to(device, non_blocking=True), [inputs_aux, heatmap_aux])
+        inputs, inputs_aux = inputs
+        heatmap, heatmap_aux = heatmap
+        inputs_aux, heatmap_aux = map(lambda x: x.to(device, non_blocking=True), [inputs_aux, heatmap_aux])
             
         n = inputs.size(0)
         end = time.time()
         inputs, target, heatmap = map(lambda x: x.to(device, non_blocking=True), [inputs, target, heatmap])
-        if args.frp:
-            inputs = heatmap
 
         images = inputs
+        (logits, xs, xm, xl), (logit_K, K_xs, K_xm, K_xl), hidden_feature = captuer(inputs, inputs_aux)
+        output, temp_out = model(hidden_feature)
 
-        (logits, xs, xm, xl), temp_out = model(inputs)
-
-        Total_loss = 0
-        if args.MultiLoss:
-            lamd1, lamd2, lamd3, lamd4 = map(float, args.loss_lamdb)
-            globals()['CE_loss'] = lamd1 * CE(logits, target) + lamd2 * CE(xs, target) + lamd3 * CE(xm,
-                                                                                                    target) + lamd4 * CE(
-                xl, target)
-        else:
-            globals()['CE_loss'] = CE(logits, target)
-        Total_loss += CE_loss
+        Fusion_loss = CE(output[0], target) + CE(output[1], target)
+        Total_loss = Fusion_loss
 
         globals()['Total_loss'] = Total_loss 
         meter_dict['Infer_Time'].update((time.time() - end) / n)
 
+        v_paths += v_path
         grounds += target.cpu().tolist()
 
         # save logits from outputs
-        preds[0] += torch.argmax(logits, dim=1).cpu().tolist()
-        preds[1] += torch.argmax(xs+xm+xl, dim=1).cpu().tolist()
-        preds[2] += torch.argmax(xs+xm, dim=1).cpu().tolist()
-        preds[3] += torch.argmax(xs+xl, dim=1).cpu().tolist()
-        preds[4] += torch.argmax(xl+xm, dim=1).cpu().tolist()
+        preds[0] += torch.argmax((logits+logit_K)/2., dim=1).cpu().tolist()
+        preds[1] += torch.argmax((logits + logit_K + output[0] + output[1])/4., dim=1).cpu().tolist()
 
-        v_paths += v_path
         torch.distributed.barrier()
-
-        globals()['Acc_adaptive'], globals()['Acc_adaptive_top5'] = accuracy(logits, target, topk=(1, 5))
-        globals()['Acc_all'], _ = accuracy(xs+xm+xl, target, topk=(1, 5))
-        globals()['Acc_sm'], _ = accuracy(xs+xm, target, topk=(1, 5))
-        globals()['Acc_sl'], _ = accuracy(xs+xl, target, topk=(1, 5))
-        globals()['Acc_lm'], _ = accuracy(xl+xm, target, topk=(1, 5))
+        globals()['Acc_r'], globals()['Acc_r_top5'] = accuracy(logits, target, topk=(1, 5))
+        globals()['Acc_d'], globals()['Acc_d_top5'] = accuracy(logit_K, target, topk=(1, 5))
+        globals()['Acc_rgbd'], globals()['Acc_rgbd_top5'] = accuracy((logits+logit_K)/2., target, topk=(1, 5))
+        globals()['Acc_fusion'], globals()['Acc_fusion_top5'] = accuracy((logits + logit_K + output[0] + output[1])/4., target, topk=(1, 5))
 
         for name in meter_dict:
             if 'loss' in name:
@@ -664,31 +612,13 @@ def infer(valid_queue, model, criterion, local_rank, epoch, device, obtain_softm
             log_info.update(dict((name, '{:.4f}'.format(value.avg)) for name, value in meter_dict.items()))
             print_func(log_info)
             if args.vis_feature:
-                Visfeature(args, model.module, images, v_path, torch.softmax(logits, dim=-1))
+                Visfeature(args, model.module, images, v_path, torch.softmax(logits, dim=-1), FusionNet=True)
 
-        if args.save_output:
-            feature_embedding(temp_out, v_path, embedding_dict)
-            for t, logit in zip(v_path, logits):
-                logits_out[t] = logit
-        if obtain_softmax_score and args.eval_only:
-            for t, logit in zip(target.cpu().tolist(), logits):
-                if t not in softmax_score:
-                    softmax_score[t] = [torch.softmax(logit, dim=-1).max(-1)[0]]
-                else:
-                    softmax_score[t].append(torch.softmax(logit, dim=-1).max(-1)[0])
-    
     # select best acc output
-    acc_list = torch.tensor([meter_dict['Acc_adaptive'].avg, meter_dict['Acc_all'].avg, meter_dict['Acc_sm'].avg, meter_dict['Acc_sl'].avg, meter_dict['Acc_lm'].avg])
+    acc_list = torch.tensor([meter_dict['Acc_fusion'].avg, meter_dict['Acc_rgbd'].avg])
     best_idx = torch.argmax(acc_list).tolist()
     preds = preds[best_idx] # Note: only preds be refined
 
-    if obtain_softmax_score and args.eval_only:
-        softmax_score = dict(sorted(softmax_score.items(), key = lambda i: i[0]))
-        print('\n', 'The confidence scores for categories: ')
-        print('| Class ID \t softmax score |')
-        for k, v in softmax_score.items():
-            print('| {0} \t {1} |'.format(k, round(float(sum(v)/len(v)), 2)))
-        print('-' * 80)
 
     grounds_gather = concat_all_gather(torch.tensor(grounds).to(device))
     preds_gather = concat_all_gather(torch.tensor(preds).to(device))
@@ -705,10 +635,8 @@ def infer(valid_queue, model, criterion, local_rank, epoch, device, obtain_softm
         v_paths = v_paths[wrong_idx[0]]
         grounds = grounds[wrong_idx[0]]
         preds = preds[wrong_idx[0]]
-        if epoch % 5 == 0 and args.save_output:
-            torch.save(embedding_dict, os.path.join(args.save, 'feature-{}-epoch{}.pth'.format(args.type, epoch)))
 
-    return acc_list.tolist()[best_idx], meter_dict['Total_loss'].avg, dict(grounds=grounds_gather, preds=preds_gather, valid_images=(v_paths, grounds, preds)), meter_dict, logits_out
+    return  acc_list.tolist()[best_idx], meter_dict['Total_loss'].avg, dict(grounds=grounds_gather, preds=preds_gather, valid_images=(v_paths, grounds, preds)), meter_dict, logits_out
 
 if __name__ == '__main__':
     # import os

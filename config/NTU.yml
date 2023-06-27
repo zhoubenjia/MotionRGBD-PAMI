@@ -1,18 +1,13 @@
-# '''
-# Copyright (C) 2010-2021 Alibaba Group Holding Limited.
-# '''
-
 common:
   #-------basic Hyparameter----------
   visdom:
     enable: False
     visname: NTU
   dataset: NTU #Database name e.g., NTU, THU ...
-  init_epochs: 0
   report_freq: 10
-  test_batch_size: 40
   dist: True
   vis_feature: True # Visualization?
+  DEBUG: False
 
   scheduler:
     name: cosin
@@ -25,12 +20,9 @@ common:
   loss_lamdb: [ 1, 0.5, 0.5, 0.5 ]
 
 model:
-  Network: DSNV2 # e.g., DSN or FusionNet
-  pretrained: ''
+  Network: DSNV2 # e.g., DSNV2 or FusionNet
   resumelr: ''
   SYNC_BN: 1
-  # w: 4
-  # temper: 0.5
   recoupling: True
   knn_attention: 0.7
   sharpness: True
@@ -56,22 +48,6 @@ fusion:
     cv32: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-32-CV-DTNV2-K-sm-0.2/model_best.pth.tar
     cv64: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-64-CV-DTNV2-K/model_best.pth.tar-95.9
     
-  # rgb_checkpoint: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-64-CS-DTNV2-SGD/model_best.pth.tar
-  # depth_checkpoint: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-64-CS-DTNV2-SGD-K/model_best.pth.tar
-  # rgb_checkpoint: '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-32-CS-DTNV2-M/model_best.pth.tar'
-  # depth_checkpoint: '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-32-CS-DTNV2-K/model_best.pth.tar'
-  # rgb_checkpoint: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-64-CS-DTNV2-SGD/model_best.pth.tar
-  # depth_checkpoint: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-64-CS-DTNV2-SGD-K/model_best.pth.tar
-  # rgb_checkpoint: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-16-CS-DTNV2-M/model_best.pth.tar
-  # depth_checkpoint: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-16-CS-DTNV2-K/model_best.pth.tar
-
-  # rgb_checkpoint: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-16-CV-DTNV2-M/model_best.pth.tar
-  # depth_checkpoint: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-16-CV-DTNV2-K/model_best.pth.tar
-  # rgb_checkpoint: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-32-CV-DTNV2-M/model_best.pth.tar
-  # depth_checkpoint: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-32-CV-DTNV2-K-sm-0.2/model_best.pth.tar
-  # rgb_checkpoint: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-64-CV-DTNV2-SGD-sm-0.1/model_best.pth.tar
-  # depth_checkpoint: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/NTU-RGBD-64-CV-DTNV2-K/model_best.pth.tar-95.9
-
 dataset:
   flip: 0.5
   rotated: 0.5

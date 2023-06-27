@@ -4,9 +4,7 @@ common:
     enable: False
     visname: THU
   dataset: THUREAD
-  init_epochs: 0
   report_freq: 10
-  test_batch_size: 4
   dist: True
   vis_feature: True # Visualization?
   DEBUG: False
@@ -22,12 +20,9 @@ common:
   loss_lamdb: [ 1, 0.5, 0.5, 0.5 ]
 
 model:
-  Network: DSNV2 # deit_tiny_patch16_224 # e.g., DSN or FusionNet
-  pretrained: ''
+  Network: DSNV2 # e.g., DSNV2 or FusionNet
   resumelr: False
   SYNC_BN: 1
-  # w: 10
-  # temper: 0.5
   recoupling: True
   knn_attention: 0.7
   sharpness: True
@@ -40,14 +35,12 @@ fusion:
   #-------Used for fusion network----------
   rgb_checkpoint:  
     cs16: '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-16-DTNV2-M/model_best.pth.tar-per-ntu'
-    cs32: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-32-DTNV2-M-simi/model_best.pth.tar #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-32-DTNV2-M/model_best.pth.tar-per-iso #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ2-32-DTNV2-M/model_best.pth.tar-per-iso #'/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-32-DTNV2-M/model_best.pth.tar-per-iso'
-    cs64: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-64-DTNV2-M/model_best.pth.tar-per-sm_v2 #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-64-DTNV2-M/model_best.pth.tar-per-iso
+    cs32: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-32-DTNV2-M-simi/model_best.pth.tar 
+    cs64: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-64-DTNV2-M/model_best.pth.tar-per-sm_v2 
   depth_checkpoint:
     cs16: '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-16-DTNV2-K/model_best.pth.tar'
-    cs32: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-32-DTNV2-K-simi/model_best.pth.tar #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-32-DTNV2-K/model_best.pth.tar-per-iso #/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ2-32-DTNV2-K/model_best.pth.tar-per-iso 
+    cs32: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-32-DTNV2-K-simi/model_best.pth.tar 
     cs64: /mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ4-64-DTNV2-K/model_best.pth.tar
-  # rgb_checkpoint: '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ-32-@4/model_best.pth.tar-87.5' 
-  # depth_checkpoint: '/mnt/workspace/Code/MotionRGBD-PAMI/Checkpoints/THU-READ-K-sm-plus-0.5/model_best.pth.tar' 
 
 dataset:
   flip: 0.5

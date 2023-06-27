@@ -71,21 +71,28 @@ class Datasets(Dataset):
 
         self.inputs = list(filter(lambda x: x[1] > min_frames, get_data_list_and_label(ground_truth)))
         self.inputs = list(self.inputs)
+        self.batch_check()
         self.video_apth = dict([(self.inputs[i][0], i) for i in range(len(self.inputs))])
         return self.inputs, self.video_apth
     
-    def __str__(self):
+    def batch_check(self):
         if self.phase == 'train':
             while len(self.inputs) % (self.args.batch_size * self.args.nprocs) != 0:
                 sample = random.choice(self.inputs)
                 self.inputs.append(sample)
+        else:
+            while len(self.inputs) % (self.args.test_batch_size * self.args.nprocs) != 0:
+                sample = random.choice(self.inputs)
+                self.inputs.append(sample)
+
+    def __str__(self):
+        if self.phase == 'train':
             frames = [n[1] for n in self.inputs]
             return 'Training Data Size is: {} \n'.format(len(self.inputs)) + 'Average Train Data frames are: {}, max frames: {}, min frames: {}\n'.format(sum(frames)//len(self.inputs), max(frames), min(frames))
         else:
             frames = [n[1] for n in self.inputs]
             return 'Validation Data Size is: {} \n'.format(len(self.inputs)) + 'Average validation Data frames are: {}, max frames: {}, min frames: {}\n'.format(
                 sum(frames) // len(self.inputs), max(frames), min(frames))
-        # self.frame_num = {'avg': sum(frames) // len(self.inputs), 'max': max(frames), 'min': min(frames)}
 
     def transform_params(self, resize=(320, 240), crop_size=224, flip=0.5):
         if self.phase == 'train':
@@ -182,10 +189,7 @@ class Datasets(Dataset):
         def Sample_Image(imgs_path, sl):
             frams = []
             for a in sl:
-                try:
-                    ori_image = Image.open(self.get_path(imgs_path, a))
-                except:
-                    ori_image = Image.open(os.path.join(imgs_path, "MDepth-%08d.png" % int(a+1))) # For NTU fusion
+                ori_image = Image.open(self.get_path(imgs_path, a))
                 img = transform(ori_image)
                 frams.append(self.transform(img).view(3, sample_size, sample_size, 1))
             if self.args.frp:

@@ -21,7 +21,7 @@ def build_dataset(args, phase):
         K='depth',
         F='Flow'
     )
-    assert args.type in modality, 'Error in modality!'
+    assert args.type in modality, 'Error in modality! The currently supported modalities include: M (RGB), K (Depth) and F (Flow)'
     Datasets_func = dict(
         basic=Datasets,
         NvGesture=NvData,
@@ -34,10 +34,7 @@ def build_dataset(args, phase):
     if args.local_rank == 0:
         logging.info('Dataset:{}, Modality:{}'.format(args.dataset, modality[args.type]))
 
-    if args.dataset in ['THUREAD'] and args.type == 'K':
-        splits = args.splits + '/depth_{}_lst.txt'.format(phase)
-    else:
-        splits = args.splits + '/{}.txt'.format(phase)
+    splits = args.splits + '/{}.txt'.format(phase)
     dataset = Datasets_func[args.dataset](args, splits, modality[args.type], phase=phase)
     print(dataset)
     if args.dist:
