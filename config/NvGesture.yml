@@ -21,6 +21,7 @@ common:
 
 model:
   Network: DSNV2 # e.g., DSNV2 or FusionNet
+  pretrained: ''
   resumelr: ''
   SYNC_BN: 1
   recoupling: True
