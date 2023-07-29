@@ -2,12 +2,26 @@
 
 arXiv version: [this url](https://arxiv.org/abs/2211.09146)
 
+This repo is the official implementation of "A Unified Multimodal *De-* and *Re*-coupling Framework for RGB-D Motion Recognition" as well as the follow-ups. It is an extension of the [CVPR'23](https://github.com/damo-cv/MotionRGBD/) paper. It currently includes code and models for the following tasks:
+> **RGB-D-based Action Recognition**: Included in this repo.
+
+> **RGB-D-based Gesture Recognition**: Included in this repo.
+
+>**Video data augementation**: Included in this repo. See the ShuffleMix+ strategy in this paper.
+
 ## News
+***2023/07/29***
+
+1. Uploaded the training results on the [NTU-RGBD-120](https://paperswithcode.com/paper/ntu-rgbd-120-a-large-scale-benchmark-for-3d) dataset.
+   
 ***2023/06/20***
 
 1. Add dataset split files.
 2. Fixed some bugs.
 3. Update README.
+
+## Visualization
+
 
 ## 1. Performance
 <p align="center">
@@ -145,6 +159,23 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 --use_e
     <td>RGB-D</td>
     <td>16/32/64</td>
     <td>97.5/97.8/98.0</td>
+    <td><a href="https://drive.google.com/drive/folders/1z0pvQlN31I4aKTaCDKbAmkwT7WO29MTO?usp=sharing">Google Drive</a></td>
+  </tr>
+
+  </tr>
+    <tr>
+    <td>NTU-RGBD-120(CS)</td>
+    <td>RGB</td>
+    <td>16/32/64</td>
+    <td>-/89.8/-</td>
+    <td><a href="https://drive.google.com/drive/folders/1z0pvQlN31I4aKTaCDKbAmkwT7WO29MTO?usp=sharing">Google Drive</a></td>
+  </tr>
+  </tr>
+    <tr>
+    <td>NTU-RGBD-120(CS)</td>
+    <td>Depth</td>
+    <td>16/32/64</td>
+    <td>-/92.6/-</td>
     <td><a href="https://drive.google.com/drive/folders/1z0pvQlN31I4aKTaCDKbAmkwT7WO29MTO?usp=sharing">Google Drive</a></td>
   </tr>
   
