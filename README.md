@@ -37,7 +37,7 @@ This repo is the official implementation of "A Unified Multimodal *De-* and *Re*
 </p>
 
 <p align="center">
-  <img width="600" height="300" src="demo/confusion_matrix.png"> 
+  <img width="600" height="300" src="demo/confusion_matrix.jpg"> 
   
   The proposed method (UMDR) outperforms a number of state-of-the-art methods on both action and gesture datasets.
 </p>
