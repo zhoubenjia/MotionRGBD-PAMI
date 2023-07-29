@@ -20,8 +20,14 @@ This repo is the official implementation of "A Unified Multimodal *De-* and *Re*
 2. Fixed some bugs.
 3. Update README.
 
-## Visualization
-
+## ShuffleMix+ and Visualization
+<p align="center">
+  <img width="300" height="300" src="demo/CAM-Features.gif">     
+   <img width="300" height="300" src="demo/CAM-Features-K.gif"> 
+   
+   * A visual illustration of the proposed data augmentation technique (those examples where frames jitter significantly).
+   * Visualization of the class activation responses for RGB and depth modalities.
+</p>
 
 ## 1. Performance
 <p align="center">
