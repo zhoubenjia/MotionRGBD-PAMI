@@ -1,6 +1,6 @@
 # [[TPAMI](https://ieeexplore.ieee.org/abstract/document/10122710/)] A Unified Multimodal *De-* and *Re*-coupling Framework for RGB-D Motion Recognition 
 
-arXiv version: [this url](https://arxiv.org/abs/2211.09146)
+[![report](https://img.shields.io/badge/ArXiv-Paper-red)](https://arxiv.org/abs/2211.09146)
 
 This repo is the official implementation of "A Unified Multimodal *De-* and *Re*-coupling Framework for RGB-D Motion Recognition" as well as the follow-ups. It is an extension of the [CVPR'23](https://github.com/damo-cv/MotionRGBD/) paper. It currently includes code and models for the following tasks:
 > **RGB-D-based Action Recognition**: Included in this repo.
