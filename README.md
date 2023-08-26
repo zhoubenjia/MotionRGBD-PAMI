@@ -60,7 +60,7 @@ Data prepare: dataset with the following folder structure:
 │  ├── @CV
 │  │   ├── train.txt
 │  │   ├── valid.txt
-├──Frames/
+├──ImagesResize/
 │  │   ├── S001C002P001R001A002_rgb
 │  │   │   ├──000000.jpg
 │  │   │   ├──000001.jpg
