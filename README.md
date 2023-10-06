@@ -10,6 +10,10 @@ This repo is the official implementation of "A Unified Multimodal *De-* and *Re*
 >**Video data augementation**: Included in this repo. See the ShuffleMix+ strategy in this paper.
 
 ## News
+***2023/10/06***
+
+1. This method achieved the 4th in the [ICIAP Multimodal Action Recognition Competition](https://iplab.dmi.unict.it/MECCANO/challenge.html).
+   
 ***2023/07/29***
 
 1. Uploaded the training results on the [NTU-RGBD-120](https://paperswithcode.com/paper/ntu-rgbd-120-a-large-scale-benchmark-for-3d) dataset.
