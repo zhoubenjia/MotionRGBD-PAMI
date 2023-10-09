@@ -2,6 +2,7 @@
 
 <a href="https://pytorch.org/get-started/locally/"><img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-ee4c2c?logo=pytorch&logoColor=white"></a>  [![report](https://img.shields.io/badge/ArXiv-Paper-red)](https://arxiv.org/abs/2211.09146)
 <a href="https://iplab.dmi.unict.it/MECCANO/challenge.html"><img alt="4th Place" src="https://img.shields.io/badge/ICIAP Multimodal Action Recognition Competition-4th Place-color?logo=trophy&logoColor=white"></a>
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/a-unified-multimodal-de-and-re-coupling/action-recognition-in-videos-on-ntu-rgbd)](https://paperswithcode.com/sota/action-recognition-in-videos-on-ntu-rgbd?p=a-unified-multimodal-de-and-re-coupling)
 
 This repo is the official implementation of "A Unified Multimodal *De-* and *Re*-coupling Framework for RGB-D Motion Recognition" as well as the follow-ups. It is an extension of the [CVPR'23](https://github.com/damo-cv/MotionRGBD/) paper. It currently includes code and models for the following tasks:
 > **RGB-D-based Action Recognition**: Included in this repo.
