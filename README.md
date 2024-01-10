@@ -1,19 +1,49 @@
 # [[TPAMI](https://ieeexplore.ieee.org/abstract/document/10122710/)] A Unified Multimodal *De-* and *Re*-coupling Framework for RGB-D Motion Recognition 
 
-arXiv version: [this url](https://arxiv.org/abs/2211.09146)
+<a href="https://pytorch.org/get-started/locally/"><img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-ee4c2c?logo=pytorch&logoColor=white"></a>  [![report](https://img.shields.io/badge/ArXiv-Paper-red)](https://arxiv.org/abs/2211.09146)
+<a href="https://iplab.dmi.unict.it/MECCANO/challenge.html"><img alt="4th Place" src="https://img.shields.io/badge/ICIAP Multimodal Action Recognition Competition-4th Place-color?logo=trophy&logoColor=white"></a>
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/a-unified-multimodal-de-and-re-coupling/action-recognition-in-videos-on-ntu-rgbd)](https://paperswithcode.com/sota/action-recognition-in-videos-on-ntu-rgbd?p=a-unified-multimodal-de-and-re-coupling)
+
+This repo is the official implementation of "A Unified Multimodal *De-* and *Re*-coupling Framework for RGB-D Motion Recognition" as well as the follow-ups. It is an extension of the [CVPR'23](https://github.com/damo-cv/MotionRGBD/) paper. It currently includes code and models for the following tasks:
+> **RGB-D-based Action Recognition**: Included in this repo.
+
+> **RGB-D-based Gesture Recognition**: Included in this repo.
+
+>**Video data augementation**: Included in this repo. See the ShuffleMix+ strategy in this paper.
 
 ## News
+***2023/10/06***
+
+1. This method achieved the 4th Place in the [ICIAP Multimodal Action Recognition Competition](https://iplab.dmi.unict.it/MECCANO/challenge.html).
+   
+***2023/07/29***
+
+1. Uploaded the training results on the [NTU-RGBD-120](https://paperswithcode.com/paper/ntu-rgbd-120-a-large-scale-benchmark-for-3d) dataset.
+   
 ***2023/06/20***
 
 1. Add dataset split files.
 2. Fixed some bugs.
 3. Update README.
 
+## Attention Visualization
+<p align="center">
+  <img width="300" height="300" src="demo/CAM-Features.gif">     
+   <img width="300" height="300" src="demo/CAM-Features-K.gif"> 
+   
+   * Visualization of the class activation responses for RGB and depth modalities.
+</p>
+
 ## 1. Performance
 <p align="center">
   <img width="600" height="300" src="demo/performance.jpg"> 
   <!-- <img width="800" height="200" src="demo/decouple_recouple.jpg"> -->
 
+</p>
+
+<p align="center">
+  <img width="600" height="300" src="demo/confusion_matrix.jpg"> 
+  
   The proposed method (UMDR) outperforms a number of state-of-the-art methods on both action and gesture datasets.
 </p>
 
@@ -36,7 +66,7 @@ Data prepare: dataset with the following folder structure:
 │  ├── @CV
 │  │   ├── train.txt
 │  │   ├── valid.txt
-├──Frames/
+├──ImagesResize/
 │  │   ├── S001C002P001R001A002_rgb
 │  │   │   ├──000000.jpg
 │  │   │   ├──000001.jpg
@@ -145,6 +175,23 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 --use_e
     <td>RGB-D</td>
     <td>16/32/64</td>
     <td>97.5/97.8/98.0</td>
+    <td><a href="https://drive.google.com/drive/folders/1z0pvQlN31I4aKTaCDKbAmkwT7WO29MTO?usp=sharing">Google Drive</a></td>
+  </tr>
+
+  </tr>
+    <tr>
+    <td>NTU-RGBD-120(CS)</td>
+    <td>RGB</td>
+    <td>16/32/64</td>
+    <td>-/89.8/-</td>
+    <td><a href="https://drive.google.com/drive/folders/1z0pvQlN31I4aKTaCDKbAmkwT7WO29MTO?usp=sharing">Google Drive</a></td>
+  </tr>
+  </tr>
+    <tr>
+    <td>NTU-RGBD-120(CS)</td>
+    <td>Depth</td>
+    <td>16/32/64</td>
+    <td>-/92.6/-</td>
     <td><a href="https://drive.google.com/drive/folders/1z0pvQlN31I4aKTaCDKbAmkwT7WO29MTO?usp=sharing">Google Drive</a></td>
   </tr>
   
