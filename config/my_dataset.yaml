@@ -1,0 +1,54 @@
+common:
+  #-------basic Hyparameter----------
+  visdom:
+    enable: False
+    visname: my_dataset
+  dataset: basic #Database name e.g., NTU, THUREAD ...
+  report_freq: 10
+  dist: True
+  vis_feature: True # Visualization?
+  DEBUG: False
+
+  scheduler:
+    name: cosin
+    patience: 4
+    warm_up_epochs: 3
+  loss:
+    name: SoftCE
+    labelsmooth: True
+  MultiLoss: True
+  loss_lamdb: [ 1, 0.5, 0.5, 0.5 ]
+
+model:
+  Network: DSNV2 # e.g., DSNV2 or FusionNet
+  pretrained: ''
+  resumelr: ''
+  SYNC_BN: 1
+  recoupling: True
+  knn_attention: 0.7
+  sharpness: True
+  temp: [ 0.04, 0.07 ]
+  frp: False
+  SEHeads: 1
+  N: 6 # Number of Transformer Blocks
+
+fusion:
+  #-------Used for fusion network----------
+  rgb_checkpoint:  
+    cs16: ''
+    cs32: ''
+    cs64: ''
+  depth_checkpoint:
+    cs16: ''
+    cs32: ''
+    cs64: ''
+
+dataset:
+  flip: 0.0
+  rotated: 0.5
+  angle: (-20, 20)
+  Blur: False
+  resize: (256, 256)
+  crop_size: 224
+  sample_size: 224
+  sample_window: 1
