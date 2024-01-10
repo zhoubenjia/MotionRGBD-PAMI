@@ -36,7 +36,7 @@ class NvData(Datasets):
         self.data_path = os.path.join(self.dataset_root, self.typ, self.inputs[index][0])
         self.clip, skgmaparr = self.image_propose(self.data_path, sl)
 
-        if self.args.FusionNet or self.args.model_ema:
+        if self.args.Network == 'FusionNet' or self.args.model_ema:
             if self.typ == 'rgb':
                 self.data_path = self.data_path.replace('rgb', 'depth')
             else:

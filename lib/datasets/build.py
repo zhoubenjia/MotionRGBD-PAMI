@@ -37,7 +37,7 @@ def build_dataset(args, phase):
     splits = args.splits + '/{}.txt'.format(phase)
     dataset = Datasets_func[args.dataset](args, splits, modality[args.type], phase=phase)
     print(dataset)
-    if args.dist:
+    if args.distributed:
         data_sampler = DistributedSampler(dataset)
     else:
         data_sampler = None

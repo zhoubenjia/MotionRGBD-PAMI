@@ -66,7 +66,7 @@ class Datasets(Dataset):
         
     def prepropose(self, ground_truth, min_frames=16):
         def get_data_list_and_label(data_df):
-            return [(lambda arr: (arr[0], int(arr[1]), int(arr[2])))(i[:-1].split(' '))
+            return [(lambda arr: (arr[0], int(arr[1]), int(arr[2])))(i.strip().split(' '))
                     for i in open(data_df).readlines()]
 
         self.inputs = list(filter(lambda x: x[1] > min_frames, get_data_list_and_label(ground_truth)))
@@ -253,7 +253,7 @@ class Datasets(Dataset):
             tuple: (image, target) where target is class_index of the target class.
         """
         sl = self.get_sl(self.inputs[index][1])
-        self.data_path = os.path.join(self.dataset_root, self.inputs[index][0])
+        self.data_path = os.path.join(self.dataset_root, self.typ, self.inputs[index][0])
         self.clip, skgmaparr = self.image_propose(self.data_path, sl)
         return self.clip.permute(0, 3, 1, 2), skgmaparr.permute(0, 3, 1, 2), self.inputs[index][2], self.inputs[index][0]
         

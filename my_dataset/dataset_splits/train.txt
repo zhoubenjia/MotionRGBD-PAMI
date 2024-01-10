@@ -1,0 +1,2 @@
+subject11_r0/ 80 0 
+subject11_r1/ 80 1 
