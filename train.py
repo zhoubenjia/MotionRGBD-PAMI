@@ -56,7 +56,7 @@ def get_args_parser():
     parser = argparse.ArgumentParser('Motion RGB-D training and evaluation script', add_help=False)
     parser.add_argument('--data', type=str, default='/path/to/NTU-RGBD/dataset/', help='data dir')
     parser.add_argument('--splits', type=str, default='/path/to/NTU-RGBD/dataset/dataset_splits/@CS', help='data dir')
-    parser.add_argument('--num-classes', default=None)
+    parser.add_argument('--num-classes', default=None, type=int)
 
     parser.add_argument('--batch-size', default=16, type=int)
     parser.add_argument('--test-batch-size', default=32, type=int)
