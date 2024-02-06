@@ -19,9 +19,10 @@ def build_dataset(args, phase):
     modality = dict(
         M='rgb',
         K='depth',
-        F='Flow'
+        F='Flow',
+        rgbd='RGB-D'
     )
-    assert args.type in modality, 'Error in modality! The currently supported modalities include: M (RGB), K (Depth) and F (Flow)'
+    assert args.type in modality, 'Error in modality! The currently supported modalities include: M (RGB), K (Depth), F (Flow) and rgbd (RGB-D)'
     Datasets_func = dict(
         basic=Datasets,
         NvGesture=NvData,

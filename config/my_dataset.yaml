@@ -31,16 +31,17 @@ model:
   frp: False
   SEHeads: 1
   N: 6 # Number of Transformer Blocks
+  num_classes: 25
 
 fusion:
   #-------Used for fusion network----------
   rgb_checkpoint:  
     cs16: ''
-    cs32: ''
+    cs32: '/homedata/bjzhou/codes/MotionRGBD-PAMI/output_dir/NV-TSM-M/model_best.pth.tar'
     cs64: ''
   depth_checkpoint:
     cs16: ''
-    cs32: ''
+    cs32: '/homedata/bjzhou/codes/MotionRGBD-PAMI/output_dir/NV-TSM-M/model_best.pth.tar'
     cs64: ''
 
 dataset:

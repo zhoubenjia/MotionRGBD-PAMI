@@ -253,15 +253,19 @@ class Datasets(Dataset):
             tuple: (image, target) where target is class_index of the target class.
         """
         sl = self.get_sl(self.inputs[index][1])
-        self.data_path = os.path.join(self.dataset_root, self.typ, self.inputs[index][0])
-        self.clip, skgmaparr = self.image_propose(self.data_path, sl)
 
         if self.args.Network == 'FusionNet':
-            assert self.typ == 'rgb'
+            assert self.typ != 'rgbd', "Please specify '--type rgbd'."
+            self.data_path = os.path.join(self.dataset_root, 'rgb', self.inputs[index][0])
+            self.clip, skgmaparr = self.image_propose(self.data_path, sl)
+
             self.data_path = os.path.join(self.dataset_root, 'depth', self.inputs[index][0])
             self.clip1, skgmaparr1 = self.image_propose(self.data_path, sl)
             return (self.clip.permute(0, 3, 1, 2), self.clip1.permute(0, 3, 1, 2)), (skgmaparr, skgmaparr1), \
                    self.inputs[index][2], self.data_path
+        
+        self.data_path = os.path.join(self.dataset_root, self.typ, self.inputs[index][0])
+        self.clip, skgmaparr = self.image_propose(self.data_path, sl)
         
         return self.clip.permute(0, 3, 1, 2), skgmaparr.permute(0, 3, 1, 2), self.inputs[index][2], self.inputs[index][0]
         

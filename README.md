@@ -118,7 +118,7 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 --use_e
 # scc-depth: number of CFCer used in spatial domain. tcc-depth: number of CFCer used in temporal domain.
 python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 --use_env train_fusion.py --config config/NTU.yml --data /path/to/Dataset/NTU-RGBD/frames --splits /path/to/Dataset/NTU-RGBD/dataset_splits/@CS/ --save ./output_dir/ --batch-size 16 --sample-duration 32 \
 --smprob 0.2 --mixup 0.8 --shufflemix 0.3 --epochs 100 --distill 0.0 --intar-fatcer 2 \
---FusionNet cs32 --lr 0.01 --sched step --opt sgd --decay-epochs 10 --scc-depth 2 --tcc-depth 4
+--FusionNet cs32 --lr 0.01 --sched step --opt sgd --decay-epochs 10 --scc-depth 2 --tcc-depth 4 --type rgbd
 ```
 
 ### Evaluation
