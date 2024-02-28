@@ -12,6 +12,9 @@ This repo is the official implementation of "A Unified Multimodal *De-* and *Re*
 >**Video data augementation**: Included in this repo. See the ShuffleMix+ strategy in this paper.
 
 ## News
+***2024/2/28***
+1. To reuse UMDR-Net on a new action recognition dataset, one may refer to [this guide](https://github.com/zhoubenjia/MotionRGBD-PAMI/issues/3).
+
 ***2023/10/06***
 
 1. This method achieved the 4th Place in the [ICIAP Multimodal Action Recognition Competition](https://iplab.dmi.unict.it/MECCANO/challenge.html).
