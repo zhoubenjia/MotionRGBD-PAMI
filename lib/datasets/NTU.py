@@ -37,8 +37,7 @@ class NTUData(Datasets):
             tuple: (image, target) where target is class_index of the target class.
         """
         sl = self.get_sl(self.inputs[index][1])
-
-        if self.typ == 'rgb':
+        if self.typ == 'rgb' or self.typ == 'rgbd':
             self.data_path = os.path.join(self.dataset_root, 'ImagesResize', self.inputs[index][0])
 
         if self.typ == 'depth':
@@ -47,7 +46,7 @@ class NTUData(Datasets):
         self.clip, skgmaparr = self.image_propose(self.data_path, sl)
 
         if self.args.Network == 'FusionNet' or self.args.model_ema:
-            assert self.typ == 'rgb'
+            # assert self.typ == 'rgb'
             self.data_path = os.path.join(self.dataset_root, 'nturgb+d_depth_masked', self.inputs[index][0][:-4])
             self.clip1, skgmaparr1 = self.image_propose(self.data_path, sl)
             return (self.clip.permute(0, 3, 1, 2), self.clip1.permute(0, 3, 1, 2)), (skgmaparr, skgmaparr1), \

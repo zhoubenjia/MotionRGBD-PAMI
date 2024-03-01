@@ -20,7 +20,7 @@ def build_dataset(args, phase):
         M='rgb',
         K='depth',
         F='Flow',
-        rgbd='RGB-D'
+        rgbd='rgbd'
     )
     assert args.type in modality, 'Error in modality! The currently supported modalities include: M (RGB), K (Depth), F (Flow) and rgbd (RGB-D)'
     Datasets_func = dict(
@@ -46,9 +46,9 @@ def build_dataset(args, phase):
     if phase == 'train':
         return torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers,
                                                   shuffle=(data_sampler is None),
-                                                  sampler=data_sampler, pin_memory=True, drop_last=False), data_sampler
+                                                  sampler=data_sampler, pin_memory=True, drop_last=True), data_sampler
     else:
         args.test_batch_size = int(1.5 * args.batch_size)
         return torch.utils.data.DataLoader(dataset, batch_size=args.test_batch_size, num_workers=args.num_workers,
                                                   shuffle=False,
-                                                  sampler=data_sampler, pin_memory=True, drop_last=False), data_sampler
+                                                  sampler=data_sampler, pin_memory=True, drop_last=True), data_sampler

@@ -4,6 +4,7 @@ common:
     enable: False
     visname: NTU
   dataset: NTU #Database name e.g., NTU, THU ...
+  num_classes: 60
   report_freq: 10
   dist: True
   vis_feature: True # Visualization?

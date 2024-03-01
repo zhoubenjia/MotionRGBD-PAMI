@@ -7,8 +7,6 @@ from torch.autograd import Variable
 from torch import nn, einsum
 import torch.nn.functional as F
 
-from timm.models.layers import trunc_normal_, helpers, DropPath
-
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
 import numpy as np

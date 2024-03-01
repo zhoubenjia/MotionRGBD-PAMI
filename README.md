@@ -124,6 +124,11 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 --use_e
 --FusionNet cs32 --lr 0.01 --sched step --opt sgd --decay-epochs 10 --scc-depth 2 --tcc-depth 4 --type rgbd
 ```
 
+### Score Fusion
+```bash
+python -m torch.distributed.launch --nproc_per_node=1 --master_port=1234 --use_env fusion.py --config config/NTU.yml --data /path/to/Dataset/NTU-RGBD/frames --splits /path/to/Dataset/NTU-RGBD/dataset_splits/@CS/ --save ./output_dir/ --batch-size 16 --sample-duration 32  --intar-fatcer 2 --FusionNet cs32 --type rgbd
+```
+
 ### Evaluation
 ```bash
 python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 --use_env train.py --config config/NTU.yml --data /path/to/Dataset/NTU-RGBD/frames --splits /path/to/Dataset/NTU-RGBD/dataset_splits/@CS/  --batch-size 16 --sample-duration 32 --eval_only --resume /path/to/model_best.pth.tar 

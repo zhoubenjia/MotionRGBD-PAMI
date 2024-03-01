@@ -273,7 +273,7 @@ def main(args):
 
     if args.SYNC_BN and args.nprocs > 1:
         model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
-    model = nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=False)
+    model = nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=True)
     model_without_ddp = model.module
 
     mixup_fn = None

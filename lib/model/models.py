@@ -19,7 +19,7 @@ random.seed(123)
 
 from timm.models.vision_transformer import VisionTransformer, _cfg
 from timm.models.registry import register_model
-from timm.models.layers import trunc_normal_, helpers, DropPath
+from timm.models.layers import trunc_normal_, DropPath
 from timm.models.resnet import Bottleneck, ResNet
 from timm.models.resnet import _cfg as _cfg_resnet
 from timm.models.helpers import build_model_with_cfg
@@ -176,7 +176,7 @@ class Mlp(nn.Module):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
-        drop_probs = helpers.to_2tuple(drop)
+        drop_probs = [drop, drop]
 
         self.fc1 = nn.Linear(in_features, hidden_features)
         self.act = act_layer()

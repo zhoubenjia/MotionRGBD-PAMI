@@ -148,6 +148,8 @@ parser.add_argument('--train-interpolation', type=str, default='bicubic',
 parser.add_argument('--repeated-aug', action='store_true')
 parser.add_argument('--no-repeated-aug', action='store_false', dest='repeated_aug')
 parser.set_defaults(repeated_aug=True)
+parser.add_argument('--resize-rate', type=float, default=0.1,
+                        help='random resize rate (default: 0.1)')
 
 # * Random Erase params
 parser.add_argument('--reprob', type=float, default=0.25, metavar='PCT',
@@ -216,12 +218,21 @@ class FusionModule(nn.Module):
         self.rgb = DSNNetV2(args, num_classes=args.num_classes, pretrained=args.pretrained)
         self.depth = DSNNetV2(args, num_classes=args.num_classes, pretrained=args.pretrained)
 
-        rgb_checkpoint = args.rgb_checkpoint[args.FusionNet]
-        self.strat_epoch_r, self.best_acc_r = load_checkpoint(self.rgb, rgb_checkpoint)
-        print(f'Best acc RGB: {self.best_acc_r}')
-        depth_checkpoint = args.depth_checkpoint[args.FusionNet]
-        self.strat_epoch_d, self.best_acc_d = load_checkpoint(self.depth, depth_checkpoint)
-        print(f'Best acc depth: {self.best_acc_d}')
+        try:
+            rgb_checkpoint = args.rgb_checkpoint[args.FusionNet]
+            self.strat_epoch_r, self.best_acc_r = load_checkpoint(self.rgb, rgb_checkpoint)
+            print(f'Best acc RGB: {self.best_acc_r}')
+        except Exception as e:
+            print(e)
+            print(f'You must specify rgb model parameters in {args.config}! (e.g., {args.FusionNet}: /path/to/model_best.pth.tar)')
+        
+        try:
+            depth_checkpoint = args.depth_checkpoint[args.FusionNet]
+            self.strat_epoch_d, self.best_acc_d = load_checkpoint(self.depth, depth_checkpoint)
+            print(f'Best acc depth: {self.best_acc_d}')
+        except Exception as e:
+            print(e)
+            print(f'You must specify depth model parameters in {args.config}! (e.g., {args.FusionNet}: /path/to/model_best.pth.tar)')
 
     def forward(self, r, d):
         self.args.epoch = self.strat_epoch_r - 1
