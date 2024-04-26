@@ -126,7 +126,7 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port=1234 --use_e
 
 ### Score Fusion
 ```bash
-python -m torch.distributed.launch --nproc_per_node=1 --master_port=1234 --use_env fusion.py --config config/NTU.yml --data /path/to/Dataset/NTU-RGBD/frames --splits /path/to/Dataset/NTU-RGBD/dataset_splits/@CS/ --save ./output_dir/ --batch-size 16 --sample-duration 32  --intar-fatcer 2 --FusionNet cs32 --type rgbd
+python -m torch.distributed.launch --nproc_per_node=1 --master_port=1234 --use_env score_fusion.py --config config/NTU.yml --data /path/to/Dataset/NTU-RGBD/frames --splits /path/to/Dataset/NTU-RGBD/dataset_splits/@CS/ --save ./output_dir/ --batch-size 16 --sample-duration 32  --intar-fatcer 2 --FusionNet cs32 --type rgbd
 ```
 
 ### Evaluation
